@@ -1,0 +1,177 @@
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarGroup,
+    SidebarMenu,
+    SidebarMenuItem,
+    SidebarMenuButton,
+    SidebarHeader,
+    SidebarFooter,
+    SidebarSeparator,
+} from '@/components/ui/sidebar';
+import { useAuth } from '@/context/AuthContext';
+import { useSheets } from '@/context/SheetsContext';
+import type { RouteAttributes } from '@/types';
+import { LogOut, RotateCw, ShoppingCart } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import Logo from './Logo';
+
+interface SidebarProps {
+    items: RouteAttributes[];
+}
+
+export default ({ items }: SidebarProps) => {
+    const navigate = useNavigate();
+    // ✅ GET ALL SHEETS FROM CONTEXT
+    const { 
+        indentSheet, 
+        storeInSheet, 
+        issueSheet,
+        fullkittingSheet,
+        pcReportSheet,
+        poMasterSheet,
+        tallyEntrySheet,
+        receivedSheet,
+        paymentHistorySheet,
+        updateAll, 
+        allLoading 
+    } = useSheets();
+    const { user, logout } = useAuth();
+    console.log("user", user);
+
+    const allItems = [...items];
+
+    return (
+        <Sidebar side="left" variant="inset" collapsible="offcanvas">
+            <SidebarHeader className="p-3 border-b-1">
+                <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                        <Logo />
+
+                        <div>
+                            <h2 className="text-xl font-bold">Store App</h2>
+                            <p className="text-sm">Management System</p>
+                        </div>
+                    </div>
+                    <Button variant="ghost" className="size-7" onClick={() => updateAll()} disabled={allLoading}>
+                        <RotateCw />
+                    </Button>
+                </div>
+                <SidebarSeparator />
+                <div className="flex justify-between items-center px-3 text-xs text-muted-foreground">
+                    <div>
+                        <p>
+                            Name: <span className="font-semibold">{user.name}</span>
+                        </p>
+                        <p>
+                            Username: <span className="font-semibold">{user.username}</span>
+                        </p>
+                    </div>
+                    <Button variant="outline" className="size-8" onClick={() => logout()}>
+                        <LogOut />
+                    </Button>
+                </div>
+            </SidebarHeader>
+            <SidebarContent className="py-1 border-b-1">
+                <SidebarGroup>
+                    <SidebarMenu>
+                        {allItems
+    .filter((item) => {
+        // Check user permission
+        if (item.gateKey) {
+            return user[item.gateKey] === true || user[item.gateKey] === "true";
+        }
+        return true;
+    })
+    .map((item, i) => {
+        // ✅ DETERMINE WHICH SHEET TO USE BASED ON ROUTE PATH
+        let sheetData: any[] = [];
+        let notificationCount = 0;
+
+        // Only calculate if notification function exists
+        if (item.notifications) {
+            switch (item.path) {
+                case 'Issue-data':
+                case 'store-issue':
+                    sheetData = issueSheet || [];
+                    break;
+                case 'store-in':
+                    sheetData = storeInSheet || [];
+                    break;
+                case 'Full-Kiting':
+                    sheetData = fullkittingSheet || [];
+                    break;
+                case 'take-entry-by-tally':
+                    sheetData = tallyEntrySheet || [];
+                    break;
+                case 'po-history':
+                case 'create-po':
+                    sheetData = poMasterSheet || [];
+                    break;
+                case 'pending-poss':  // ✅ FIXED: Use indentSheet
+                    sheetData = indentSheet || [];
+                    break;
+                case 'Bill-Not-Received':  // ✅ ADD THIS
+                     sheetData = storeInSheet || [];
+                     break;
+                case 'audit-data':  // ✅ ADD THIS
+                    sheetData = tallyEntrySheet || [];
+                    break;
+                case 'Payment-Status':
+                    sheetData = paymentHistorySheet || [];
+                    break;
+                case 'DBforPc':
+                    sheetData = pcReportSheet || [];
+                    break;
+                case 'Quality-Check-In-Received-Item':
+                sheetData = storeInSheet || [];  // ✅ Use storeInSheet
+                    break;
+                case 'Send-Debit-Note':  // ✅ ADD THIS
+                sheetData = storeInSheet || [];
+                break;
+                default:
+                    // For all other indent-based routes
+                    sheetData = indentSheet || [];
+            }
+
+            // Calculate notification count with the correct sheet
+            notificationCount = item.notifications(sheetData);
+        }
+
+        return (
+            <SidebarMenuItem key={i}>
+                <SidebarMenuButton
+                    className="transition-colors duration-200 rounded-md py-5 flex justify-between font-medium text-secondary-foreground"
+                    onClick={() => navigate(item.path)}
+                    isActive={window.location.pathname.slice(1) === item.path}
+                >
+                    <div className="flex gap-2 items-center">
+                        {item.icon}
+                        {item.name}
+                    </div>
+                    {/* ✅ SHOW BADGE WITH CORRECT COUNT */}
+                    {notificationCount !== 0 && (
+                        <span className="bg-destructive text-secondary w-[1.3rem] h-[1.3rem] rounded-full text-xs grid place-items-center text-center">
+                            {notificationCount > 99 ? '99+' : notificationCount}
+                        </span>
+                    )}
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+        );
+    })}
+
+                    </SidebarMenu>
+                </SidebarGroup>
+            </SidebarContent>
+            <SidebarFooter>
+                <div className="p-2 text-center text-sm">
+                    Powered by &#8208;{' '}
+                    <a className="text-primary" href="https://botivate.in" target="_blank">
+                        Botivate
+                    </a>
+                </div>
+            </SidebarFooter>
+        </Sidebar>
+    );
+};
