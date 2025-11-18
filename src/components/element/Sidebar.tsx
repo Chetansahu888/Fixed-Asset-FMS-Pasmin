@@ -50,7 +50,7 @@ export default ({ items }: SidebarProps) => {
                         <Logo />
 
                         <div>
-                            <h2 className="text-xl font-bold">Store App</h2>
+                            <h2 className="text-xl font-bold">Fixed Asset </h2>
                             <p className="text-sm">Management System</p>
                         </div>
                     </div>

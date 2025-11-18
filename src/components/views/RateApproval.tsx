@@ -46,6 +46,7 @@ interface HistoryData {
     product: string;
     vendor: [string, string];
     date: string;
+    firmNameMatch?: string;
 }
 
 export default () => {
@@ -58,81 +59,114 @@ export default () => {
     const [historyData, setHistoryData] = useState<HistoryData[]>([]);
     const [openDialog, setOpenDialog] = useState(false);
 
-    
+    // ✅ CHANGED: Filter for pending - planned1 not empty, actual1 empty
+    // ✅ PENDING: Show when BOTH planned1 AND actual1 are NOT NULL (both filled)
+// ✅ PENDING: Show when planned3 is NOT NULL and actual3 IS NULL
 useEffect(() => {
+    console.log('=== RATE APPROVAL - PENDING ===');
+    console.log('Total indent records:', indentSheet.length);
+    
     const filteredByFirm = indentSheet.filter(sheet => 
         user.firmNameMatch.toLowerCase() === "all" || sheet.firmName === user.firmNameMatch
     );
     
+    console.log('Filtered by firm:', filteredByFirm.length);
+    
+    // ✅ NEW CONDITION: planned3 is filled AND actual3 is empty
+    const pending = filteredByFirm.filter((sheet) => {
+        const hasPlanned3 = sheet.planned3 && sheet.planned3 !== '';
+        const noActual3 = !sheet.actual3 || sheet.actual3 === '';
+        
+        if (hasPlanned3 && noActual3) {
+            console.log('✅ Pending item:', {
+                indent: sheet.indentNumber,
+                planned3: sheet.planned3,
+                actual3: sheet.actual3
+            });
+        }
+        
+        // ✅ SHOW when planned3 is filled BUT actual3 is empty
+        return hasPlanned3 && noActual3;
+    });
+    
+    console.log('Pending items count:', pending.length);
+    
     setTableData(
-        filteredByFirm
-            .filter(
-                (sheet) =>
-                    sheet.planned3 !== '' &&
-                    sheet.actual3 === '' &&
-                    sheet.vendorType === 'Three Party'
-            )
-            .map((sheet: any) => ({
-                indentNo: sheet.indentNumber,
-                firmNameMatch: sheet.firmNameMatch || '',
-                indenter: sheet.indenterName,
-                department: sheet.department,
-                product: sheet.productName,
-                comparisonSheet: sheet.comparisonSheet || '',
-                date: formatDate(new Date(sheet.timestamp)),
-                vendors: [
-                    [
-                        sheet.vendorName1, 
-                        sheet.rate1?.toString() || '0', 
-                        sheet.paymentTerm1,
-                        sheet.selectRateType1 || 'With Tax',
-                        sheet.withTaxOrNot1 || 'Yes',
-                        sheet.taxValue1?.toString() || '0'
-                    ],
-                    [
-                        sheet.vendorName2, 
-                        sheet.rate2?.toString() || '0', 
-                        sheet.paymentTerm2,
-                        sheet.selectRateType2 || 'With Tax',
-                        sheet.withTaxOrNot2 || 'Yes',
-                        sheet.taxValue2?.toString() || '0'
-                    ],
-                    [
-                        sheet.vendorName3, 
-                        sheet.rate3?.toString() || '0', 
-                        sheet.paymentTerm3,
-                        sheet.selectRateType3 || 'With Tax',
-                        sheet.withTaxOrNot3 || 'Yes',
-                        sheet.taxValue3?.toString() || '0'
-                    ],
+        pending.map((sheet: any) => ({
+            indentNo: sheet.indentNumber,
+            firmNameMatch: sheet.firmNameMatch || '',
+            indenter: sheet.indenterName,
+            department: sheet.department,
+            product: sheet.productName,
+            comparisonSheet: sheet.comparisonSheet || '',
+            date: formatDate(new Date(sheet.timestamp)),
+            vendors: [
+                [
+                    sheet.vendorName1, 
+                    sheet.rate1?.toString() || '0', 
+                    sheet.paymentTerm1,
+                    sheet.selectRateType1 || 'With Tax',
+                    sheet.withTaxOrNot1 || 'Yes',
+                    sheet.taxValue1?.toString() || '0'
                 ],
-            }))
+                [
+                    sheet.vendorName2, 
+                    sheet.rate2?.toString() || '0', 
+                    sheet.paymentTerm2,
+                    sheet.selectRateType2 || 'With Tax',
+                    sheet.withTaxOrNot2 || 'Yes',
+                    sheet.taxValue2?.toString() || '0'
+                ],
+                [
+                    sheet.vendorName3, 
+                    sheet.rate3?.toString() || '0', 
+                    sheet.paymentTerm3,
+                    sheet.selectRateType3 || 'With Tax',
+                    sheet.withTaxOrNot3 || 'Yes',
+                    sheet.taxValue3?.toString() || '0'
+                ],
+            ],
+        }))
     );
 }, [indentSheet, user.firmNameMatch]);
 
-
+    // ✅ CHANGED: Filter for history - planned1 not empty, actual1 not empty
+    // ✅ HISTORY: Show when BOTH planned3 AND actual3 are NOT NULL
 useEffect(() => {
+    console.log('=== RATE APPROVAL - HISTORY ===');
+    
     const filteredByFirm = indentSheet.filter(sheet => 
         user.firmNameMatch.toLowerCase() === "all" || sheet.firmName === user.firmNameMatch
     );
     
+    // ✅ NEW CONDITION: planned3 !== '' && actual3 !== ''
+    const history = filteredByFirm.filter((sheet) => {
+        const hasPlanned3 = sheet.planned3 && sheet.planned3 !== '';
+        const hasActual3 = sheet.actual3 && sheet.actual3 !== '';
+        
+        if (hasPlanned3 && hasActual3) {
+            console.log('✅ History item:', {
+                indent: sheet.indentNumber,
+                planned3: sheet.planned3,
+                actual3: sheet.actual3
+            });
+        }
+        
+        return hasPlanned3 && hasActual3;
+    });
+    
+    console.log('History items count:', history.length);
+    
     setHistoryData(
-        filteredByFirm
-            .filter(
-                (sheet) =>
-                    sheet.planned3 !== '' &&
-                    sheet.actual3 !== '' &&
-                    sheet.vendorType === 'Three Party'
-            )
-            .map((sheet: any) => ({
-                indentNo: sheet.indentNumber,
-                firmNameMatch: sheet.firmNameMatch || '',
-                indenter: sheet.indenterName,
-                department: sheet.department,
-                product: sheet.productName,
-                date: new Date(sheet.timestamp).toDateString(),
-                vendor: [sheet.approvedVendorName, sheet.approvedRate?.toString() || '0'],
-            }))
+        history.map((sheet: any) => ({
+            indentNo: sheet.indentNumber,
+            firmNameMatch: sheet.firmNameMatch || '',
+            indenter: sheet.indenterName,
+            department: sheet.department,
+            product: sheet.productName,
+            date: new Date(sheet.timestamp).toDateString(),
+            vendor: [sheet.approvedVendorName, sheet.approvedRate?.toString() || '0'],
+        }))
     );
 }, [indentSheet, user.firmNameMatch]);
 
@@ -228,7 +262,7 @@ useEffect(() => {
             },
         ] : []),
         { accessorKey: 'indentNo', header: 'Indent No.' },
-        { accessorKey: 'firmNameMatch', header: ' Firm Name' },
+        { accessorKey: 'firmNameMatch', header: 'Firm Name' },
         { accessorKey: 'indenter', header: 'Indenter' },
         { accessorKey: 'department', header: 'Department' },
         { accessorKey: 'product', header: 'Product' },
@@ -262,37 +296,37 @@ useEffect(() => {
         },
     });
 
-async function onSubmit(values: z.infer<typeof schema>) {
-    try {
-        const filtered = indentSheet.filter((s) => s.indentNumber === selectedIndent?.indentNo);
-        console.log("🔍 Filtered data:", filtered);
-        console.log("🔍 First item rowIndex:", filtered[0]?.rowIndex);
-        
-        const selectedVendor = selectedIndent?.vendors[values.vendor];
-        
-        const updatedRows = filtered.map((prev: any) => ({
-            rowIndex: prev.rowIndex,
-            actual3: new Date().toISOString(),
-            approvedVendorName: selectedVendor?.[0] || '',
-            approvedRate: selectedVendor?.[1] || '0',
-            approvedPaymentTerm: selectedVendor?.[2] || '',
-            withTaxOrNot4: selectedVendor?.[4] || 'Yes',
-            taxValue4: selectedVendor?.[5] || '0',
-        }));
-        
-        console.log("📤 Sending to backend:", updatedRows);
-        
-        await postToSheet(updatedRows, 'update');
-        
-        toast.success(`Approved vendor for ${selectedIndent?.indentNo}`);
-        setOpenDialog(false);
-        form.reset();
-        setTimeout(() => updateIndentSheet(), 1000);
-    } catch (error) {
-        console.error("❌ Full error:", error);
-        toast.error('Failed to update vendor');
+    async function onSubmit(values: z.infer<typeof schema>) {
+        try {
+            const filtered = indentSheet.filter((s) => s.indentNumber === selectedIndent?.indentNo);
+            console.log("🔍 Filtered data:", filtered);
+            console.log("🔍 First item rowIndex:", filtered[0]?.rowIndex);
+            
+            const selectedVendor = selectedIndent?.vendors[values.vendor];
+            
+            const updatedRows = filtered.map((prev: any) => ({
+                rowIndex: prev.rowIndex,
+                actual3: new Date().toISOString(),  // ✅ CHANGED: Update actual1 instead of actual3
+                approvedVendorName: selectedVendor?.[0] || '',
+                approvedRate: selectedVendor?.[1] || '0',
+                approvedPaymentTerm: selectedVendor?.[2] || '',
+                withTaxOrNot4: selectedVendor?.[4] || 'Yes',
+                taxValue4: selectedVendor?.[5] || '0',
+            }));
+            
+            console.log("📤 Sending to backend:", updatedRows);
+            
+            await postToSheet(updatedRows, 'update');
+            
+            toast.success(`Approved vendor for ${selectedIndent?.indentNo}`);
+            setOpenDialog(false);
+            form.reset();
+            setTimeout(() => updateIndentSheet(), 1000);
+        } catch (error) {
+            console.error("❌ Full error:", error);
+            toast.error('Failed to update vendor');
+        }
     }
-}
 
     const historyUpdateSchema = z.object({
         rate: z.coerce.number(),
@@ -366,7 +400,7 @@ async function onSubmit(values: z.infer<typeof schema>) {
                         <DataTable
                             data={tableData}
                             columns={columns}
-                            searchFields={['product', 'department', 'indenter' ,'firmNameMatch']}
+                            searchFields={['product', 'department', 'indenter', 'firmNameMatch']}
                             dataLoading={indentLoading}
                         />
                     </TabsContent>
@@ -374,7 +408,7 @@ async function onSubmit(values: z.infer<typeof schema>) {
                         <DataTable
                             data={historyData}
                             columns={historyColumns}
-                            searchFields={['product', 'department', 'indenter','firmNameMatch']}
+                            searchFields={['product', 'department', 'indenter', 'firmNameMatch']}
                             dataLoading={indentLoading}
                         />
                     </TabsContent>

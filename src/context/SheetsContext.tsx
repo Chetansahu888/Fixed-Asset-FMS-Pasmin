@@ -11,23 +11,28 @@ import type {
     PcReportSheet,
     FullkittingSheet,
     PaymentHistory,
+    PIApprovalSheet,  // ✅ CORRECT
 } from '@/types';
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 interface SheetsState {
+    // Update functions
     updateReceivedSheet: () => void;
     updatePoMasterSheet: () => void;
     updateIndentSheet: () => void;
     updateAll: () => void;
-
     updateIssueSheet: () => void;
-    issueSheet: IssueSheet[];
-    issueLoading: boolean;
+    updateStoreInSheet: () => void;
+    updateTallyEntrySheet: () => void;
+    updatePcReportSheet: () => void;
+    updateFullkittingSheet: () => void;
+    updatePaymentHistorySheet: () => void;
+    updatePIApprovalSheet: () => void;  // ✅ CORRECT
+
+    // Sheet data
     sheets: StoreInSheet[];
-
-
     indentSheet: IndentSheet[];
     storeInSheet: StoreInSheet[];
     poMasterSheet: PoMasterSheet[];
@@ -35,65 +40,71 @@ interface SheetsState {
     inventorySheet: InventorySheet[];
     pcReportSheet: PcReportSheet[];
     masterSheet: MasterSheet | undefined;
+    issueSheet: IssueSheet[];
+    tallyEntrySheet: TallyEntrySheet[];
+    fullkittingSheet: FullkittingSheet[];
+    paymentHistorySheet: PaymentHistory[];
+    piApprovalSheet: PIApprovalSheet[];  // ✅ CORRECT
 
+    // Loading states
     indentLoading: boolean;
     poMasterLoading: boolean;
     receivedLoading: boolean;
     inventoryLoading: boolean;
     allLoading: boolean;
-
-    updateStoreInSheet: () => void;
+    issueLoading: boolean;
     storeInLoading: boolean;
-
-    tallyEntrySheet: TallyEntrySheet[];
     tallyEntryLoading: boolean;
-    updateTallyEntrySheet: () => void;
-
-    updatePcReportSheet: () => void;
-
-    fullkittingSheet: FullkittingSheet[];
     fullkittingLoading: boolean;
-    updateFullkittingSheet: () => void;
-
-    // ✅ ADD PAYMENT HISTORY HERE
-    paymentHistorySheet: PaymentHistory[];
     paymentHistoryLoading: boolean;
-    updatePaymentHistorySheet: () => void;
+    piApprovalLoading: boolean;  // ✅ CORRECT
 }
 
 const SheetsContext = createContext<SheetsState | null>(null);
 
 export const SheetsProvider = ({ children }: { children: React.ReactNode }) => {
+    // All sheet states
     const [indentSheet, setIndentSheet] = useState<IndentSheet[]>([]);
     const [storeSheet, setStoreInSheet] = useState<StoreInSheet[]>([]);
     const [receivedSheet, setReceivedSheet] = useState<ReceivedSheet[]>([]);
     const [poMasterSheet, setPoMasterSheet] = useState<PoMasterSheet[]>([]);
     const [inventorySheet, setInventorySheet] = useState<InventorySheet[]>([]);
     const [masterSheet, setMasterSheet] = useState<MasterSheet>();
-
     const [tallyEntrySheet, setTallyEntrySheet] = useState<TallyEntrySheet[]>([]);
     const [pcReportSheet, setPcReportSheet] = useState<PcReportSheet[]>([]);
     const [fullkittingSheet, setFullkittingSheet] = useState<FullkittingSheet[]>([]);
-    const [fullkittingLoading, setFullkittingLoading] = useState(true);
-
-    const [tallyEntryLoading, setTallyEntryLoading] = useState(true);
-
     const [issueSheet, setIssueSheet] = useState<IssueSheet[]>([]);
-    const [issueLoading, setIssueLoading] = useState(true);
+    const [paymentHistorySheet, setPaymentHistorySheet] = useState<PaymentHistory[]>([]);
+    const [piApprovalSheet, setPIApprovalSheet] = useState<PIApprovalSheet[]>([]);  // ✅ CORRECT
 
+    // All loading states
     const [indentLoading, setIndentLoading] = useState(true);
     const [poMasterLoading, setPoMasterLoading] = useState(true);
     const [receivedLoading, setReceivedLoading] = useState(true);
     const [inventoryLoading, setInventoryLoading] = useState(true);
     const [allLoading, setAllLoading] = useState(true);
-
     const [storeInLoading, setStoreInLoading] = useState(true);
-
-    // ✅ ADD PAYMENT HISTORY STATE
-    const [paymentHistorySheet, setPaymentHistorySheet] = useState<PaymentHistory[]>([]);
+    const [tallyEntryLoading, setTallyEntryLoading] = useState(true);
+    const [fullkittingLoading, setFullkittingLoading] = useState(true);
+    const [issueLoading, setIssueLoading] = useState(true);
     const [paymentHistoryLoading, setPaymentHistoryLoading] = useState(true);
+    const [piApprovalLoading, setPIApprovalLoading] = useState(true);  // ✅ CORRECT
 
-   const sheets = storeSheet;
+    const sheets = storeSheet;
+
+    // Update functions
+    function updatePIApprovalSheet() {  // ✅ CORRECT
+        setPIApprovalLoading(true);
+        fetchSheet('PI APPROVAL')
+            .then((res) => {
+        setPIApprovalSheet(res as unknown as PIApprovalSheet[]);  // ✅ FIXED
+                setPIApprovalLoading(false);
+            })
+            .catch((error) => {
+                console.error('Error fetching PI APPROVAL:', error);
+                setPIApprovalLoading(false);
+            });
+    }
 
     function updateStoreInSheet() {
         setStoreInLoading(true);
@@ -107,6 +118,7 @@ export const SheetsProvider = ({ children }: { children: React.ReactNode }) => {
                 setStoreInLoading(false);
             });
     }
+
     function updateIssueSheet() {
         setIssueLoading(true);
         fetchSheet('ISSUE').then((res) => {
@@ -134,7 +146,6 @@ export const SheetsProvider = ({ children }: { children: React.ReactNode }) => {
     function updatePoMasterSheet() {
         setPoMasterLoading(true);
         fetchSheet('PO MASTER').then((res) => {
-            // @ts-ignore - Suppress TypeScript error
             setPoMasterSheet(res as PoMasterSheet[]);
             setPoMasterLoading(false);
         });
@@ -167,7 +178,6 @@ export const SheetsProvider = ({ children }: { children: React.ReactNode }) => {
             });
     }
 
-    // ✅ ADD PAYMENT HISTORY FUNCTION
     function updatePaymentHistorySheet() {
         setPaymentHistoryLoading(true);
         fetchSheet('Payment History')
@@ -180,36 +190,6 @@ export const SheetsProvider = ({ children }: { children: React.ReactNode }) => {
                 setPaymentHistoryLoading(false);
             });
     }
-
-    function updateAll() {
-        setAllLoading(true);
-        updateMasterSheet();
-        updateReceivedSheet();
-        updateIndentSheet();
-        updatePoMasterSheet();
-        updateInventorySheet();
-        
-        updateStoreInSheet();
-        updateIssueSheet();
-        updateTallyEntrySheet();
-        updatePcReportSheet();
-        updateFullkittingSheet();
-        
-        // ✅ ADD PAYMENT HISTORY TO UPDATE ALL
-        updatePaymentHistorySheet();
-        
-        setAllLoading(false);
-    }
-
-    useEffect(() => {
-        try {
-            updateAll();
-            toast.success('Fetched all the data');
-        } catch (e) {
-            toast.error('Something went wrong while fetching data');
-        } finally {
-        }
-    }, []);
 
     function updateTallyEntrySheet() {
         setTallyEntryLoading(true);
@@ -230,48 +210,75 @@ export const SheetsProvider = ({ children }: { children: React.ReactNode }) => {
             .catch((err) => console.error('Error fetching PC REPORT:', err));
     }
 
+    function updateAll() {
+        setAllLoading(true);
+        updateMasterSheet();
+        updateReceivedSheet();
+        updateIndentSheet();
+        updatePoMasterSheet();
+        updateInventorySheet();
+        updateStoreInSheet();
+        updateIssueSheet();
+        updateTallyEntrySheet();
+        updatePcReportSheet();
+        updateFullkittingSheet();
+        updatePaymentHistorySheet();
+        updatePIApprovalSheet();  // ✅ CORRECT
+        setAllLoading(false);
+    }
+
+    useEffect(() => {
+        try {
+            updateAll();
+            toast.success('Fetched all the data');
+        } catch (e) {
+            toast.error('Something went wrong while fetching data');
+        }
+    }, []);
+
     return (
         <SheetsContext.Provider
             value={{
+                // Update functions
                 updateIndentSheet,
                 updatePoMasterSheet,
                 updateReceivedSheet,
                 updateAll,
-                indentSheet,
+                updateIssueSheet,
+                updateStoreInSheet,
+                updateTallyEntrySheet,
+                updatePcReportSheet,
+                updateFullkittingSheet,
+                updatePaymentHistorySheet,
+                updatePIApprovalSheet,  // ✅ CORRECT
+
+                // Sheet data
                 sheets,
+                indentSheet,
                 poMasterSheet,
                 inventorySheet,
                 receivedSheet,
-                indentLoading,
                 masterSheet,
+                storeInSheet: storeSheet,
+                issueSheet,
+                tallyEntrySheet,
+                pcReportSheet,
+                fullkittingSheet,
+                paymentHistorySheet,
+                piApprovalSheet,  // ✅ CORRECT
+
+                // Loading states
+                indentLoading,
                 poMasterLoading,
                 receivedLoading,
                 inventoryLoading,
                 allLoading,
-                storeInSheet: storeSheet,
-
-                updateIssueSheet,
-                issueSheet,
                 issueLoading,
-
-                updateStoreInSheet,
                 storeInLoading,
-
-                tallyEntrySheet,
                 tallyEntryLoading,
-                updateTallyEntrySheet,
-
-                pcReportSheet,
-                updatePcReportSheet,
-
-                fullkittingSheet,
                 fullkittingLoading,
-                updateFullkittingSheet,
-
-                // ✅ ADD PAYMENT HISTORY TO CONTEXT VALUE
-                paymentHistorySheet,
                 paymentHistoryLoading,
-                updatePaymentHistorySheet,
+                piApprovalLoading,  // ✅ CORRECT
             }}
         >
             {children}

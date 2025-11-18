@@ -1,10 +1,15 @@
+import { Package2 } from 'lucide-react';
+import Heading from '../element/Heading';
 import { useSheets } from '@/context/SheetsContext';
-import type { ColumnDef, Row } from '@tanstack/react-table';
 import { useEffect, useState } from 'react';
+import type { ColumnDef, Row } from '@tanstack/react-table';
 import DataTable from '../element/DataTable';
+import { useAuth } from '@/context/AuthContext';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import {  uploadFile } from '@/lib/fetchers';
+
 import {
     Dialog,
     DialogContent,
@@ -19,563 +24,344 @@ import { Button } from '../ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '../ui/form';
 import { PuffLoader as Loader } from 'react-spinners';
 import { toast } from 'sonner';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Input } from '../ui/input';
 import { postToSheet } from '@/lib/fetchers';
-import { RefreshCw } from 'lucide-react';
-import { Tabs, TabsContent } from '../ui/tabs';
-import { useAuth } from '@/context/AuthContext';
-import Heading from '../element/Heading';
-import { Pill } from '../ui/pill';
+import type { PIApprovalSheet } from '@/types';
 
-interface ExchangePendingData {
+interface PIPendingData {
+    rowIndex: number;
     timestamp: string;
-    liftNumber: string;
-    indentNo: string;
+    partyName: string;
     poNumber: string;
-    vendorName: string;
-    productName: string;
-    billStatus: string;
-    billNo: string;
-    qty: number;
-    leadTimeToLiftMaterial: string | number;
-    typeOfBill: string;
-    billAmount: number;
-    discountAmount: number;
-    paymentType: string;
-    advanceAmountIfAny: number;
-    photoOfBill: string;
-    transportationInclude: string;
-    transporterName: string;
+    internalCode: string;
+    product: string;
+    description: string;
+    quantity: number;
+    unit: string;
+    rate: number;
+    gstPercent: number;
+    discountPercent: number;
     amount: number;
-    receivingStatus: string;
-    receivedQuantity: number;
-    photoOfProduct: string;
-    warrenty: string;
-    endDateWarrenty: string;
-    billReceived: string;
-    billNumber: string;
-    billAmount2: string;
-    billImage: string;
-    damageOrder: string;
-    quantityAsPerBill: number;
-    priceAsPerPo: number;
-    remark: string;
-    status: string;
-    exchangeQty: string |  number;
-    reason: string;
-    billNumber2: string;
-    planned10: string;
-    actual10: string;
+    totalPoAmount: number;
+    deliveryDate: string;
+    paymentTerms: string;
     firmNameMatch: string;
 }
 
-interface ExchangeHistoryData {
-    timestamp: string;
-    liftNumber: string;
-    indentNo: string;
-    poNumber: string;
-    vendorName: string;
-    productName: string;
-    billStatus: string;
-    billNo: string;
-    qty: number;
-    leadTimeToLiftMaterial: string | number; 
-    typeOfBill: string;
-    billAmount: number;
-    discountAmount: number;
-    paymentType: string;
-    advanceAmountIfAny: number;
-    photoOfBill: string;
-    transportationInclude: string;
-    transporterName: string;
-    amount: number;
-    receivingStatus: string;
-    receivedQuantity: number;
-    photoOfProduct: string;
-    warrenty: string;
-    endDateWarrenty: string;
-    billReceived: string;
-    billNumber: string;
-    billAmount2: string;
-    billImage: string;
-    damageOrder: string;
-    quantityAsPerBill: number;
-    priceAsPerPo: number;
-    remark: string;
-    status: string;
-    exchangeQty: string | number;
-    reason: string;
-    billNumber2: string;
-    planned10: string;
-    actual10: string;
-    firmNameMatch: string;
+interface POMasterRecord {
+    rowIndex?: number;
+    timestamp?: string;
+    partyName?: string;
+    poNumber?: string;
+    quotationNumber?: string;
+    quotationDate?: string;
+    enquiryNumber?: string;
+    enquiryDate?: string;
+    internalCode?: string;
+    product?: string;
+    description?: string;
+    quantity?: string | number;
+    unit?: string;
+    rate?: string | number;
+    gstPercent?: string | number;
+    discountPercent?: string | number;
+    amount?: string | number;
+    totalPoAmount?: string | number;
+    preparedBy?: string;
+    approvedBy?: string;
+    pdf?: string;
+    deliveryDate?: string;
+    paymentTerms?: string;
+    numberOfDays?: string | number;
+    term1?: string;
+    term2?: string;
+    term3?: string;
+    term4?: string;
+    term5?: string;
+    term6?: string;
+    term7?: string;
+    term8?: string;
+    term9?: string;
+    term10?: string;
+    emailSendStatus?: string;
+    deliveryDays?: string | number;
+    deliveryType?: string;
+    firmNameMatch?: string;
+    piApprovalTimestamp?: string;
+    piQty?: string | number;
+    piAmount?: string | number;
+    piCopy?: string;
+    poRateWithoutTax?: string | number;
 }
 
-
-const ExchangeMaterials = () => {
-    const { storeInSheet, updateAll } = useSheets();
+export default function PIApprovals() {
+    const { poMasterLoading, poMasterSheet, piApprovalSheet, updateAll } = useSheets();
     const { user } = useAuth();
-
-    const [pendingData, setPendingData] = useState<ExchangePendingData[]>([]);
-    const [historyData, setHistoryData] = useState<ExchangeHistoryData[]>([]);
-    const [selectedItem, setSelectedItem] = useState<ExchangePendingData | null>(null);
+    const [pendingData, setPendingData] = useState<PIPendingData[]>([]);
+    const [selectedItem, setSelectedItem] = useState<PIPendingData | null>(null);
     const [openDialog, setOpenDialog] = useState(false);
+    const [uploadingFile, setUploadingFile] = useState(false);
 
-// useEffect(() => {
-//     setPendingData(
-//         storeInSheet
-//             .filter((i) => 
-//                 i.planned10 && i.planned10 !== '' && 
-//                 (!i.actual10 || i.actual10 === '')
-//             )
-//             .map((i) => ({
-//                 timestamp: i.timestamp || '',
-//                 liftNumber: i.liftNumber || '',
-//                 indentNo: i.indentNo || '',
-//                 poNumber: i.poNumber || '',
-//                 vendorName: i.vendorName || '',
-//                 productName: i.productName || '',
-//                 billStatus: i.billStatus || '',
-//                 billNo: i.billNo || '',
-//                 qty: i.qty || 0,
-//                 leadTimeToLiftMaterial: (i.leadTimeToLiftMaterial || '') as string | number,
-//                 typeOfBill: i.typeOfBill || '',
-//                 billAmount: i.billAmount || 0,
-//                 discountAmount: i.discountAmount || 0,
-//                 paymentType: i.paymentType || '',
-//                 advanceAmountIfAny: i.advanceAmountIfAny || 0,
-//                 photoOfBill: i.photoOfBill || '',
-//                 transportationInclude: i.transportationInclude || '',
-//                 transporterName: i.transporterName || '',
-//                 amount: i.amount || 0,
-//                 receivingStatus: i.receivingStatus || '',
-//                 receivedQuantity: i.receivedQuantity || 0,
-//                 photoOfProduct: i.photoOfProduct || '',
-//                 warrenty: i.warrenty || '',
-//                 endDateWarrenty: i.endDateWarrenty || '',
-//                 billReceived: i.billReceived || '',
-//                 billNumber: i.billNumber || '',
-//                 billAmount2: i.billAmount2 || '',
-//                 billImage: i.billImage || '',
-//                 damageOrder: i.damageOrder || '',
-//                 quantityAsPerBill: i.quantityAsPerBill || 0,
-//                 priceAsPerPo: i.priceAsPerPo || 0,
-//                 remark: i.remark || '',
-//                 status: i.status || '',
-//                 exchangeQty: (i.exchangeQty || 0) as string | number,
-//                 reason: i.reason || '',
-//                 billNumber2: i.billNumber2 || '',
-//                 planned10: i.planned10 || '',
-//                 actual10: i.actual10 || '',
-//             } as ExchangePendingData))
-//     );
-// }, [storeInSheet]);
+    useEffect(() => {
+        try {
+            console.log('=== PI APPROVALS PAGE ===');
+            console.log('poMasterSheet:', poMasterSheet);
+            console.log('Total records:', poMasterSheet?.length || 0);
 
-// useEffect(() => {
-//     setHistoryData(
-//         storeInSheet
-//             .filter((i) => 
-//                 i.actual10 && i.actual10 !== ''
-//             )
-//             .map((i) => ({
-//                 timestamp: i.timestamp || '',
-//                 liftNumber: i.liftNumber || '',
-//                 indentNo: i.indentNo || '',
-//                 poNumber: i.poNumber || '',
-//                 vendorName: i.vendorName || '',
-//                 productName: i.productName || '',
-//                 billStatus: i.billStatus || '',
-//                 billNo: i.billNo || '',
-//                 qty: i.qty || 0,
-//                 leadTimeToLiftMaterial: (i.leadTimeToLiftMaterial || '') as string | number,
-//                 typeOfBill: i.typeOfBill || '',
-//                 billAmount: i.billAmount || 0,
-//                 discountAmount: i.discountAmount || 0,
-//                 paymentType: i.paymentType || '',
-//                 advanceAmountIfAny: i.advanceAmountIfAny || 0,
-//                 photoOfBill: i.photoOfBill || '',
-//                 transportationInclude: i.transportationInclude || '',
-//                 transporterName: i.transporterName || '',
-//                 amount: i.amount || 0,
-//                 receivingStatus: i.receivingStatus || '',
-//                 receivedQuantity: i.receivedQuantity || 0,
-//                 photoOfProduct: i.photoOfProduct || '',
-//                 warrenty: i.warrenty || '',
-//                 endDateWarrenty: i.endDateWarrenty || '',
-//                 billReceived: i.billReceived || '',
-//                 billNumber: i.billNumber || '',
-//                 billAmount2: i.billAmount2 || '',
-//                 billImage: i.billImage || '',
-//                 damageOrder: i.damageOrder || '',
-//                 quantityAsPerBill: i.quantityAsPerBill || 0,
-//                 priceAsPerPo: i.priceAsPerPo || 0,
-//                 remark: i.remark || '',
-//                 status: i.status || '',
-//                 exchangeQty: (i.exchangeQty || 0) as string | number,
-//                 reason: i.reason || '',
-//                 billNumber2: i.billNumber2 || '',
-//                 planned10: i.planned10 || '',
-//                 actual10: i.actual10 || '',
-//             } as ExchangeHistoryData))
-//     );
-// }, [storeInSheet]);
+            const safePoMasterSheet: POMasterRecord[] = Array.isArray(poMasterSheet) ? poMasterSheet : [];
 
-useEffect(() => {
-    // Pehle firm name se filter karo (case-insensitive)
-    const filteredByFirm = storeInSheet.filter(item => 
-        user.firmNameMatch.toLowerCase() === "all" || item.firmNameMatch === user.firmNameMatch
-    );
-    
-    setPendingData(
-        filteredByFirm
-            .filter((i) => 
-                i.planned10 && i.planned10 !== '' && 
-                (!i.actual10 || i.actual10 === '')
-            )
-            .map((i) => ({
-                timestamp: i.timestamp || '',
-                liftNumber: i.liftNumber || '',
-                indentNo: i.indentNo || '',
-                poNumber: i.poNumber || '',
-                vendorName: i.vendorName || '',
-                productName: i.productName || '',
-                billStatus: i.billStatus || '',
-                billNo: i.billNo || '',
-                qty: i.qty || 0,
-                leadTimeToLiftMaterial: (i.leadTimeToLiftMaterial || '') as string | number,
-                typeOfBill: i.typeOfBill || '',
-                billAmount: i.billAmount || 0,
-                discountAmount: i.discountAmount || 0,
-                paymentType: i.paymentType || '',
-                advanceAmountIfAny: i.advanceAmountIfAny || 0,
-                photoOfBill: i.photoOfBill || '',
-                transportationInclude: i.transportationInclude || '',
-                transporterName: i.transporterName || '',
-                amount: i.amount || 0,
-                receivingStatus: i.receivingStatus || '',
-                receivedQuantity: i.receivedQuantity || 0,
-                photoOfProduct: i.photoOfProduct || '',
-                warrenty: i.warrenty || '',
-                endDateWarrenty: i.endDateWarrenty || '',
-                billReceived: i.billReceived || '',
-                billNumber: i.billNumber || '',
-                billAmount2: i.billAmount2 || '',
-                billImage: i.billImage || '',
-                damageOrder: i.damageOrder || '',
-                quantityAsPerBill: i.quantityAsPerBill || 0,
-                priceAsPerPo: i.priceAsPerPo || 0,
-                remark: i.remark || '',
-                status: i.status || '',
-                exchangeQty: (i.exchangeQty || 0) as string | number,
-                reason: i.reason || '',
-                billNumber2: i.billNumber2 || '',
-                planned10: i.planned10 || '',
-                actual10: i.actual10 || '',
-            } as ExchangePendingData))
-    );
-}, [storeInSheet, user.firmNameMatch]);
+            if (safePoMasterSheet.length > 0) {
+                console.log('First record:', safePoMasterSheet[0]);
+                console.log('Field names:', Object.keys(safePoMasterSheet[0]));
+            }
 
-useEffect(() => {
-    // Pehle firm name se filter karo (case-insensitive)
-    const filteredByFirm = storeInSheet.filter(item => 
-        user.firmNameMatch.toLowerCase() === "all" || item.firmNameMatch === user.firmNameMatch
-    );
-    
-    setHistoryData(
-        filteredByFirm
-            .filter((i) => 
-                i.actual10 && i.actual10 !== ''
-            )
-            .map((i) => ({
-                timestamp: i.timestamp || '',
-                liftNumber: i.liftNumber || '',
-                indentNo: i.indentNo || '',
-                poNumber: i.poNumber || '',
-                vendorName: i.vendorName || '',
-                productName: i.productName || '',
-                firmNameMatch: i.firmNameMatch || '',
-                billStatus: i.billStatus || '',
-                billNo: i.billNo || '',
-                qty: i.qty || 0,
-                leadTimeToLiftMaterial: (i.leadTimeToLiftMaterial || '') as string | number,
-                typeOfBill: i.typeOfBill || '',
-                billAmount: i.billAmount || 0,
-                discountAmount: i.discountAmount || 0,
-                paymentType: i.paymentType || '',
-                advanceAmountIfAny: i.advanceAmountIfAny || 0,
-                photoOfBill: i.photoOfBill || '',
-                transportationInclude: i.transportationInclude || '',
-                transporterName: i.transporterName || '',
-                amount: i.amount || 0,
-                receivingStatus: i.receivingStatus || '',
-                receivedQuantity: i.receivedQuantity || 0,
-                photoOfProduct: i.photoOfProduct || '',
-                warrenty: i.warrenty || '',
-                endDateWarrenty: i.endDateWarrenty || '',
-                billReceived: i.billReceived || '',
-                billNumber: i.billNumber || '',
-                billAmount2: i.billAmount2 || '',
-                billImage: i.billImage || '',
-                damageOrder: i.damageOrder || '',
-                quantityAsPerBill: i.quantityAsPerBill || 0,
-                priceAsPerPo: i.priceAsPerPo || 0,
-                remark: i.remark || '',
-                status: i.status || '',
-                exchangeQty: (i.exchangeQty || 0) as string | number,
-                reason: i.reason || '',
-                billNumber2: i.billNumber2 || '',
-                planned10: i.planned10 || '',
-                actual10: i.actual10 || '',
-            } as ExchangeHistoryData))
-    );
-}, [storeInSheet, user.firmNameMatch]);
+            // Filter by firm
+            const filteredByFirm = safePoMasterSheet.filter((sheet: POMasterRecord) =>
+                user?.firmNameMatch?.toLowerCase() === "all" ||
+                sheet?.firmNameMatch === user?.firmNameMatch
+            );
 
-useEffect(() => {
-    console.log('StoreInSheet data:', storeInSheet);
-    console.log('Exchange items:', storeInSheet.filter(i => i.typeOfBill === 'Exchange'));
-}, [storeInSheet]);
+            console.log('Filtered by firm:', filteredByFirm.length);
 
-    const pendingColumns: ColumnDef<ExchangePendingData>[] = [
-        ...(user.receiveItemView
-            ? [
-                  {
-                      header: 'Action',
-                      cell: ({ row }: { row: Row<ExchangePendingData> }) => {
-                          const item = row.original;
+            // ✅ CHANGED: Filter items that are NOT in PI Approval sheet yet
+            const approvedPONumbers = new Set(
+                (piApprovalSheet || []).map(pi => pi.piNo)
+            );
 
-                          return (
-                              <DialogTrigger asChild>
-                                  <Button
-                                      variant="outline"
-                                      onClick={() => {
-                                          setSelectedItem(item);
-                                      }}
-                                  >
-                                      Process
-                                  </Button>
-                              </DialogTrigger>
-                          );
-                      },
-                  },
-              ]
-            : []),
-        // { accessorKey: 'timestamp', header: 'Timestamp' },
-        { accessorKey: 'liftNumber', header: 'Lift Number' },
-        { accessorKey: 'indentNo', header: 'Indent No.' },
-        { accessorKey: 'poNumber', header: 'PO Number' },
-        { accessorKey: 'vendorName', header: 'Vendor Name' },
-         { accessorKey: 'firmNameMatch', header: 'Firm Name' },
-        { accessorKey: 'productName', header: 'Product Name' },
-        { accessorKey: 'billStatus', header: 'Bill Status' },
-        { accessorKey: 'billNo', header: 'Bill No.' },
-        { accessorKey: 'qty', header: 'Qty' },
-        { accessorKey: 'leadTimeToLiftMaterial', header: 'Lead Time To Lift Material' },
-        { accessorKey: 'typeOfBill', header: 'Type Of Bill' },
-        { accessorKey: 'billAmount', header: 'Bill Amount' },
-        { accessorKey: 'discountAmount', header: 'Discount Amount' },
-        { accessorKey: 'paymentType', header: 'Payment Type' },
-        { accessorKey: 'advanceAmountIfAny', header: 'Advance Amount If Any' },
+            const pending = filteredByFirm
+                .filter((sheet: POMasterRecord) => 
+                    // Not yet in PI Approval sheet
+                    !approvedPONumbers.has(sheet?.poNumber || '')
+                )
+                .map((sheet: POMasterRecord) => ({
+                    rowIndex: sheet?.rowIndex || 0,
+                    timestamp: sheet?.timestamp || '',
+                    partyName: sheet?.partyName || '',
+                    poNumber: sheet?.poNumber || '',
+                    internalCode: sheet?.internalCode || '',
+                    product: sheet?.product || '',
+                    description: sheet?.description || '',
+                    quantity: Number(sheet?.quantity || 0),
+                    unit: sheet?.unit || '',
+                    rate: Number(sheet?.rate || 0),
+                    gstPercent: Number(sheet?.gstPercent || 0),
+                    discountPercent: Number(sheet?.discountPercent || 0),
+                    amount: Number(sheet?.amount || 0),
+                    totalPoAmount: Number(sheet?.totalPoAmount || 0),
+                    deliveryDate: sheet?.deliveryDate || '',
+                    paymentTerms: sheet?.paymentTerms || '',
+                    firmNameMatch: sheet?.firmNameMatch || '',
+                }));
+
+            console.log('Pending items:', pending.length);
+            console.log('Pending data:', pending);
+            setPendingData(pending);
+
+        } catch (error) {
+            console.error('❌ Error in PI Approvals useEffect:', error);
+            setPendingData([]);
+        }
+    }, [poMasterSheet, piApprovalSheet, user?.firmNameMatch]);
+
+    const pendingColumns: ColumnDef<PIPendingData>[] = [
         {
-            accessorKey: 'photoOfBill',
-            header: 'Photo Of Bill',
-            cell: ({ row }) => {
-                const photo = row.original.photoOfBill;
-                return photo ? (
-                    <a href={photo} target="_blank" rel="noopener noreferrer">
-                        Bill
-                    </a>
-                ) : (
-                    <></>
-                );
-            },
+            header: 'Action',
+            cell: ({ row }: { row: Row<PIPendingData> }) => (
+                <DialogTrigger asChild>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedItem(row.original)}
+                    >
+                        PI Payment
+                    </Button>
+                </DialogTrigger>
+            ),
         },
-        { accessorKey: 'transportationInclude', header: 'Transportation Include' },
-        { accessorKey: 'transporterName', header: 'Transporter Name' },
-        { accessorKey: 'amount', header: 'Amount' },
-        { accessorKey: 'receivingStatus', header: 'Receiving Status' },
-        { accessorKey: 'receivedQuantity', header: 'Received Quantity' },
         {
-            accessorKey: 'photoOfProduct',
-            header: 'Photo Of Product',
-            cell: ({ row }) => {
-                const photo = row.original.photoOfProduct;
-                return photo ? (
-                    <a href={photo} target="_blank" rel="noopener noreferrer">
-                        Product
-                    </a>
-                ) : (
-                    <></>
-                );
-            },
+            accessorKey: 'poNumber',
+            header: 'PO Number',
+            cell: ({ getValue }) => <div>{getValue() as string || '-'}</div>
         },
-        { accessorKey: 'warrenty', header: 'Warrenty' },
-        { accessorKey: 'endDateWarrenty', header: 'End Date Warrenty' },
-        { accessorKey: 'billReceived', header: 'Bill Received' },
-        { accessorKey: 'billNumber', header: 'Bill Number' },
-        { accessorKey: 'billAmount2', header: 'Bill Amount' },
         {
-            accessorKey: 'billImage',
-            header: 'Bill Image',
-            cell: ({ row }) => {
-                const photo = row.original.billImage;
-                return photo ? (
-                    <a href={photo} target="_blank" rel="noopener noreferrer">
-                        Bill Image
-                    </a>
-                ) : (
-                    <></>
-                );
-            },
+            accessorKey: 'partyName',
+            header: 'Party Name',
+            cell: ({ getValue }) => <div>{getValue() as string || '-'}</div>
         },
-        { accessorKey: 'damageOrder', header: 'Damage Order' },
-        { accessorKey: 'quantityAsPerBill', header: 'Quantity As Per Bill' },
-        { accessorKey: 'priceAsPerPo', header: 'Price As Per Po' },
-        { accessorKey: 'remark', header: 'Remark' },
-        { accessorKey: 'status', header: 'Status' },
-        { accessorKey: 'exchangeQty', header: 'Exchange Qty' },
-        { accessorKey: 'reason', header: 'Reason' },
-        { accessorKey: 'billNumber2', header: 'Bill Number' },
-    ];
-
-    const historyColumns: ColumnDef<ExchangeHistoryData>[] = [
-        // { accessorKey: 'timestamp', header: 'Timestamp' },
-        { accessorKey: 'liftNumber', header: 'Lift Number' },
-        { accessorKey: 'indentNo', header: 'Indent No.' },
-        { accessorKey: 'poNumber', header: 'PO Number' },
-        { accessorKey: 'vendorName', header: 'Vendor Name' },
-         { accessorKey: 'firmNameMatch', header: 'Firm Name' },
-        { accessorKey: 'productName', header: 'Product Name' },
-        { accessorKey: 'billStatus', header: 'Bill Status' },
-        { accessorKey: 'billNo', header: 'Bill No.' },
-        { accessorKey: 'qty', header: 'Qty' },
-        { accessorKey: 'leadTimeToLiftMaterial', header: 'Lead Time To Lift Material' },
-        { accessorKey: 'typeOfBill', header: 'Type Of Bill' },
-        { accessorKey: 'billAmount', header: 'Bill Amount' },
-        { accessorKey: 'discountAmount', header: 'Discount Amount' },
-        { accessorKey: 'paymentType', header: 'Payment Type' },
-        { accessorKey: 'advanceAmountIfAny', header: 'Advance Amount If Any' },
         {
-            accessorKey: 'photoOfBill',
-            header: 'Photo Of Bill',
-            cell: ({ row }) => {
-                const photo = row.original.photoOfBill;
-                return photo ? (
-                    <a href={photo} target="_blank" rel="noopener noreferrer">
-                        Bill
-                    </a>
-                ) : (
-                    <></>
-                );
-            },
+            accessorKey: 'internalCode',
+            header: 'Internal Code',
+            cell: ({ getValue }) => <div>{getValue() as string || '-'}</div>
         },
-        { accessorKey: 'transportationInclude', header: 'Transportation Include' },
-        { accessorKey: 'transporterName', header: 'Transporter Name' },
-        { accessorKey: 'amount', header: 'Amount' },
-        { accessorKey: 'receivingStatus', header: 'Receiving Status' },
-        { accessorKey: 'receivedQuantity', header: 'Received Quantity' },
         {
-            accessorKey: 'photoOfProduct',
-            header: 'Photo Of Product',
-            cell: ({ row }) => {
-                const photo = row.original.photoOfProduct;
-                return photo ? (
-                    <a href={photo} target="_blank" rel="noopener noreferrer">
-                        Product
-                    </a>
-                ) : (
-                    <></>
-                );
-            },
+            accessorKey: 'product',
+            header: 'Product',
+            cell: ({ getValue }) => <div>{getValue() as string || '-'}</div>
         },
-        { accessorKey: 'warrenty', header: 'Warrenty' },
-        { accessorKey: 'endDateWarrenty', header: 'End Date Warrenty' },
-        { accessorKey: 'billReceived', header: 'Bill Received' },
-        { accessorKey: 'billNumber', header: 'Bill Number' },
-        { accessorKey: 'billAmount2', header: 'Bill Amount' },
         {
-            accessorKey: 'billImage',
-            header: 'Bill Image',
-            cell: ({ row }) => {
-                const photo = row.original.billImage;
-                return photo ? (
-                    <a href={photo} target="_blank" rel="noopener noreferrer">
-                        Bill Image
-                    </a>
-                ) : (
-                    <></>
-                );
-            },
+            accessorKey: 'quantity',
+            header: 'Quantity',
+            cell: ({ getValue }) => <div>{getValue() as number || 0}</div>
         },
-        { accessorKey: 'damageOrder', header: 'Damage Order' },
-        { accessorKey: 'quantityAsPerBill', header: 'Quantity As Per Bill' },
-        { accessorKey: 'priceAsPerPo', header: 'Price As Per Po' },
-        { accessorKey: 'remark', header: 'Remark' },
         {
-            accessorKey: 'status',
-            header: 'Status',
-            cell: ({ row }) => {
-                const status = row.original.status;
-                const variant = status === 'Return' ? 'secondary' : 'reject';
-                return <Pill variant={variant}>{status}</Pill>;
-            },
+            accessorKey: 'unit',
+            header: 'Unit',
+            cell: ({ getValue }) => <div>{getValue() as string || '-'}</div>
         },
-        { accessorKey: 'exchangeQty', header: 'Exchange Qty' },
-        { accessorKey: 'reason', header: 'Reason' },
-        { accessorKey: 'billNumber2', header: 'Bill Number' },
+        {
+            accessorKey: 'rate',
+            header: 'Rate',
+            cell: ({ row }) => <div>₹{(row.original.rate || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+        },
+        {
+            accessorKey: 'amount',
+            header: 'Amount',
+            cell: ({ row }) => <div>₹{(row.original.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+        },
+        {
+            accessorKey: 'totalPoAmount',
+            header: 'Total PO Amount',
+            cell: ({ row }) => <div>₹{(row.original.totalPoAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+        },
+        {
+            accessorKey: 'paymentTerms',
+            header: 'Payment Terms',
+            cell: ({ getValue }) => <div>{getValue() as string || '-'}</div>
+        },
+        {
+            accessorKey: 'firmNameMatch',
+            header: 'Firm Name',
+            cell: ({ getValue }) => <div>{getValue() as string || '-'}</div>
+        },
     ];
 
     const schema = z.object({
-    status: z.enum(['Yes', 'No']), // Changed from ['Return', 'Not Return', 'Exchange'] to ['Yes', 'No']
-});
+        qty: z.string().min(1, 'Quantity is required'),
+        piAmount: z.string().min(1, 'P.I Amount is required'),
+        piCopy: z.string().min(1, 'P.I Copy is required'),
+        poRateWithoutTax: z.string().min(1, 'PO Rate Without Tax is required'),
+    });
 
     const form = useForm({
-    resolver: zodResolver(schema),
-    defaultValues: {
-        status: undefined,
-    },
-});
+        resolver: zodResolver(schema),
+        defaultValues: {
+            qty: '',
+            piAmount: '',
+            piCopy: '',
+            poRateWithoutTax: '',
+        },
+    });
 
     useEffect(() => {
-    if (!openDialog) {
-        form.reset({
-            status: undefined,
-        });
-    }
-}, [openDialog, form]);
+        if (!openDialog) {
+            form.reset();
+        }
+    }, [openDialog, form]);
 
-async function onSubmit(values: z.infer<typeof schema>) {
+   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+        toast.error('Only PDF, JPG, and PNG files are allowed');
+        return;
+    }
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+        toast.error('File size must be less than 10MB');
+        return;
+    }
+
     try {
-        const currentDateTime = new Date()
-            .toLocaleString('en-GB', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false,
-            })
-            .replace(',', '');
-
-        await postToSheet(
-            storeInSheet
-                .filter((s) => s.liftNumber === selectedItem?.liftNumber)
-                .map((prev) => ({
-                    rowIndex: prev.rowIndex,  // To identify the row
-                    actual10: currentDateTime, // Timestamp
-                    status: values.status,     // Status (Yes/No)
-                })),
-            'update',
-            'STORE IN'
-        );
-        toast.success(`Updated status for ${selectedItem?.liftNumber}`);
-        setOpenDialog(false);
-        setTimeout(() => updateAll(), 1000);
-    } catch {
-        toast.error('Failed to update status');
+        setUploadingFile(true);
+        
+        // ✅ Use the uploadFile function from fetchers (same as reference code)
+        const driveLink = await uploadFile({
+            file: file,
+            folderId: import.meta.env.VITE_BILL_PHOTO_FOLDER // Use your PI Copy folder ID
+        });
+        
+        // Set the Google Drive link to the form
+        form.setValue('piCopy', driveLink);
+        toast.success('File uploaded successfully to Google Drive');
+    } catch (error) {
+        toast.error('Failed to upload file to Google Drive');
+        console.error('Upload error:', error);
+    } finally {
+        setUploadingFile(false);
     }
-}
+};
+
+    // ✅ GENERATE PI NUMBER
+    function generatePINumber(): string {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        
+        // Format: PI-48 or similar based on existing pattern
+        const existingPICount = (piApprovalSheet || []).length;
+        const piNumber = `PI-${existingPICount + 48}`; // Starts from PI-48 based on your sheet
+        
+        return piNumber;
+    }
+
+    // ✅ FIXED: Submit to PI APPROVAL sheet
+    async function onSubmit(values: z.infer<typeof schema>) {
+        try {
+            // Generate timestamp in the format matching your sheet
+            const currentDateTime = new Date()
+                .toLocaleString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false,
+                })
+                .replace(',', '');
+
+            // Generate PI Number
+            const piNumber = generatePINumber();
+
+            // ✅ CHANGED: Submit to PI APPROVAL sheet (not PO MASTER)
+            await postToSheet(
+    [{
+        timestamp: currentDateTime,
+        piNo: piNumber,
+        indentNo: selectedItem?.internalCode,
+        partyName: selectedItem?.partyName,
+        productName: selectedItem?.product,
+        qty: values.qty && !isNaN(Number(values.qty)) ? Number(values.qty) : 0,
+        piAmount: values.piAmount && !isNaN(Number(values.piAmount)) ? Number(values.piAmount) : 0,
+        piCopy: values.piCopy,
+        poRateWithoutTax: values.poRateWithoutTax && !isNaN(Number(values.poRateWithoutTax)) ? Number(values.poRateWithoutTax) : 0,
+        planned: '',
+        actual: '',
+        delay: '',
+        status: '',
+        approvalAmount: 0,
+    } as Partial<PIApprovalSheet>],  // ✅ TYPE ASSERTION
+    'insert',
+    'PI APPROVAL'
+);
+
+            toast.success(`PI Payment submitted for PO: ${selectedItem?.poNumber}`);
+            setOpenDialog(false);
+            setTimeout(() => updateAll(), 1000);
+        } catch (error) {
+            toast.error('Failed to process PI approval');
+            console.error(error);
+        }
+    }
 
     function onError(e: any) {
         console.log(e);
@@ -585,160 +371,208 @@ async function onSubmit(values: z.infer<typeof schema>) {
     return (
         <div>
             <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-                <Tabs defaultValue="pending">
-                    <Heading
-                        heading="Exchange Materials"
-                        subtext="Process exchange materials and manage returns"
-                        tabs
-                    >
-                        <RefreshCw size={50} className="text-primary" />
-                    </Heading>
+                <Heading heading="PI Approvals" subtext="Process PI Payments and Approvals">
+                    <Package2 size={50} className="text-primary" />
+                </Heading>
 
-                    <TabsContent value="pending">
-                        <DataTable
-                            data={pendingData}
-                            columns={pendingColumns}
-                            searchFields={[
-                                'liftNumber',
-                                'indentNo',
-                                'productName',
-                                'vendorName',
-                            ]}
-                            dataLoading={false}
-                        />
-                    </TabsContent>
-                    <TabsContent value="history">
-                        <DataTable
-                            data={historyData}
-                            columns={historyColumns}
-                            searchFields={[
-                                'liftNumber',
-                                'indentNo',
-                                'productName',
-                                'vendorName',
-                                'status',
-                            ]}
-                            dataLoading={false}
-                        />
-                    </TabsContent>
-                </Tabs>
+                <DataTable
+                    data={pendingData}
+                    columns={pendingColumns}
+                    searchFields={['poNumber', 'partyName', 'product', 'internalCode']}
+                    dataLoading={poMasterLoading}
+                    className='h-[80dvh]'
+                />
 
                 {selectedItem && (
-    <DialogContent className="sm:max-w-2xl">
-        <Form {...form}>
-            <form
-                onSubmit={form.handleSubmit(onSubmit, onError)}
-                className="space-y-5"
-            >
-                <DialogHeader className="space-y-1">
-                    <DialogTitle>Process Exchange Material</DialogTitle>
-                    <DialogDescription>
-                        Process exchange material from lift number{' '}
-                        <span className="font-medium">
-                            {selectedItem.liftNumber}
-                        </span>
-                    </DialogDescription>
-                </DialogHeader>
+                    <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+                        <Form {...form}>
+                            <form
+                                onSubmit={form.handleSubmit(onSubmit, onError)}
+                                className="space-y-5"
+                            >
+                                <DialogHeader className="space-y-1">
+                                    <DialogTitle>Process PI Approval</DialogTitle>
+                                    <DialogDescription>
+                                        Process payment for PO Number{' '}
+                                        <span className="font-medium">
+                                            {selectedItem.poNumber}
+                                        </span>
+                                    </DialogDescription>
+                                </DialogHeader>
 
-                <div className="bg-muted p-4 rounded-md grid gap-3">
-                    <h3 className="text-lg font-bold">Material Details</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        <div className="space-y-1">
-                            <p className="font-medium text-nowrap">Indent Number</p>
-                            <p className="text-sm font-light">
-                                {selectedItem.indentNo}
-                            </p>
-                        </div>
-                        <div className="space-y-1">
-                            <p className="font-medium text-nowrap">Lift Number</p>
-                            <p className="text-sm font-light">
-                                {selectedItem.liftNumber}
-                            </p>
-                        </div>
-                        <div className="space-y-1">
-                            <p className="font-medium">Product Name</p>
-                            <p className="text-sm font-light">
-                                {selectedItem.productName}
-                            </p>
-                        </div>
-                        <div className="space-y-1">
-                            <p className="font-medium">Vendor Name</p>
-                            <p className="textsm font-light">
-                                {selectedItem.vendorName}
-                            </p>
-                        </div>
-                        <div className="space-y-1">
-                            <p className="font-medium">Quantity</p>
-                            <p className="text-sm font-light">{selectedItem.qty}</p>
-                        </div>
-                        <div className="space-y-1">
-                            <p className="font-medium">Bill Amount</p>
-                            <p className="text-sm font-light">
-                                {selectedItem.billAmount}
-                            </p>
-                        </div>
-                        <div className="space-y-1">
-                            <p className="font-medium">Payment Type</p>
-                            <p className="text-sm font-light">
-                                {selectedItem.paymentType}
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                                <div className="bg-muted p-4 rounded-md grid gap-3">
+                                    <h3 className="text-lg font-bold">Pre-filled Details from PO Master</h3>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <p className="font-medium">PO Number</p>
+                                            <p className="text-sm font-light">
+                                                {selectedItem.poNumber}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="font-medium">Party Name</p>
+                                            <p className="text-sm font-light">
+                                                {selectedItem.partyName}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="font-medium">Indent No. (Internal Code)</p>
+                                            <p className="text-sm font-light">
+                                                {selectedItem.internalCode}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-1 col-span-2">
+                                            <p className="font-medium">Product Name</p>
+                                            <p className="text-sm font-light">
+                                                {selectedItem.product}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="font-medium">Quantity</p>
+                                            <p className="text-sm font-light">
+                                                {selectedItem.quantity} {selectedItem.unit}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="font-medium">Rate</p>
+                                            <p className="text-sm font-light">
+                                                ₹{selectedItem.rate.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="font-medium">Amount</p>
+                                            <p className="text-sm font-light">
+                                                ₹{selectedItem.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="font-medium">Total PO Amount</p>
+                                            <p className="text-sm font-light">
+                                                ₹{selectedItem.totalPoAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
 
-                <div className="grid gap-4">
-                    <FormField
-                        control={form.control}
-                        name="status"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Status</FormLabel>
-                                <FormControl>
-                                    <Select
-                                        onValueChange={field.onChange}
-                                        value={field.value}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Select status" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Yes">
-                                                Yes
-                                            </SelectItem>
-                                            <SelectItem value="No">
-                                                No
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </FormControl>
-                            </FormItem>
-                        )}
+                                <div className="grid gap-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="qty"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Quantity *</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="number"
+                                                        placeholder="Enter quantity"
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
+                                        name="piAmount"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>P.I Amount *</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        placeholder="Enter PI amount"
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+    control={form.control}
+    name="piCopy"
+    render={({ field }) => (
+        <FormItem>
+            <FormLabel>P.I Copy (Upload File) *</FormLabel>
+            <FormControl>
+                <div className="space-y-2">
+                    <Input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={handleFileUpload}
+                        disabled={uploadingFile}
                     />
+                    {uploadingFile && (
+                        <p className="text-sm text-blue-600 flex items-center gap-2">
+                            <Loader size={16} color="blue" />
+                            Uploading to Google Drive...
+                        </p>
+                    )}
+                    {field.value && !uploadingFile && (
+                        <div className="space-y-1">
+                            <p className="text-sm text-green-600">
+                                ✓ File uploaded successfully
+                            </p>
+                            <a 
+                                href={field.value} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                            >
+                                View uploaded file →
+                            </a>
+                        </div>
+                    )}
                 </div>
+            </FormControl>
+        </FormItem>
+    )}
+/>
 
-                <DialogFooter>
-                    <DialogClose asChild>
-                        <Button variant="outline">Close</Button>
-                    </DialogClose>
 
-                    <Button type="submit" disabled={form.formState.isSubmitting}>
-                        {form.formState.isSubmitting && (
-                            <Loader
-                                size={20}
-                                color="white"
-                                aria-label="Loading Spinner"
-                            />
-                        )}
-                        Update Status
-                    </Button>
-                </DialogFooter>
-            </form>
-        </Form>
-    </DialogContent>
-)}
+                                    <FormField
+                                        control={form.control}
+                                        name="poRateWithoutTax"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>PO Rate Without Tax *</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        placeholder="Enter PO rate without tax"
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+
+                                <DialogFooter>
+                                    <DialogClose asChild>
+                                        <Button variant="outline" type="button">Cancel</Button>
+                                    </DialogClose>
+
+                                    <Button type="submit" disabled={form.formState.isSubmitting || uploadingFile}>
+                                        {form.formState.isSubmitting && (
+                                            <Loader
+                                                size={20}
+                                                color="white"
+                                                aria-label="Loading Spinner"
+                                                className="mr-2"
+                                            />
+                                        )}
+                                        Submit Payment
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        </Form>
+                    </DialogContent>
+                )}
             </Dialog>
         </div>
     );
-};
-
-export default ExchangeMaterials;
+}

@@ -167,26 +167,26 @@ const routes: RouteAttributes[] = [
                     sheet.vendorType === 'Three Party'
             ).length,
     },
-    {
-        path: 'pending-pos',
-        gateKey: 'pendingIndentsView',
-        name: 'PO to Make/Not',
-        icon: <ListTodo size={20} />,
-        element: <PendingIndents />,
-        notifications: (sheets: any[]) =>
-            sheets.filter((sheet: any) => sheet.planned4 !== '' && sheet.actual4 === '').length,
-    },
-    {
-    path: 'pending-poss',
-    name: 'Pending PO',
-    icon: <FilePlus2 size={20} />,
-    element: <PendingPo />,
-    notifications: (sheets: any[]) =>
-        sheets.filter((sheet: any) => 
-            sheet.poRequred && 
-            sheet.poRequred.toString().trim() === 'Yes'
-        ).length,
-},
+    // {
+    //     path: 'pending-pos',
+    //     gateKey: 'pendingIndentsView',
+    //     name: 'PO to Make/Not',
+    //     icon: <ListTodo size={20} />,
+    //     element: <PendingIndents />,
+    //     notifications: (sheets: any[]) =>
+    //         sheets.filter((sheet: any) => sheet.planned4 !== '' && sheet.actual4 === '').length,
+    // },
+//     {
+//     path: 'pending-poss',
+//     name: 'Pending PO',
+//     icon: <FilePlus2 size={20} />,
+//     element: <PendingPo />,
+//     notifications: (sheets: any[]) =>
+//         sheets.filter((sheet: any) => 
+//             sheet.poRequred && 
+//             sheet.poRequred.toString().trim() === 'Yes'
+//         ).length,
+// },
     {
         path: 'create-po',
         gateKey: 'createPo',
@@ -276,6 +276,15 @@ const routes: RouteAttributes[] = [
             sheet.makePaymentLink.toString().trim() !== ''
         ).length,
 },
+ {
+        path: 'Exchange-Materials',
+        gateKey: 'exchangeMaterials',
+        name: 'PI Approval',
+        icon: <PackageCheck  size={20} />,
+        element: <ExchangeMaterials />,
+        notifications: () => 0,
+    },
+
 
 {
     path: 'Payment-Status',
@@ -311,15 +320,7 @@ const routes: RouteAttributes[] = [
 },
 
 
-    // {
-    //     path: 'Exchange-Materials',
-    //     gateKey: 'exchangeMaterials',
-    //     name: 'Exchange Materials',
-    //     icon: <PackageCheck  size={20} />,
-    //     element: <ExchangeMaterials />,
-    //     notifications: () => 0,
-    // },
-
+   
     // {
     //     path: 'Return-Material-To-Party',
     //     gateKey: 'returnMaterialToParty',

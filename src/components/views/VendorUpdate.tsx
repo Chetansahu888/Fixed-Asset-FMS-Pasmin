@@ -83,60 +83,66 @@ export default () => {
     const [historySearchQuery, setHistorySearchQuery] = useState<string>('');
 
     // Fetching table data
-    useEffect(() => {
-        const filteredByFirm = indentSheet.filter(sheet =>
-            user.firmNameMatch.toLowerCase() === "all" || sheet.firmName === user.firmNameMatch
-        );
+   // Fetching table data
+// Fetching table data
+useEffect(() => {
+    const filteredByFirm = indentSheet.filter((sheet) =>
+        user.firmNameMatch.toLowerCase() === "all" ||
+        sheet.firmName === user.firmNameMatch
+    );
 
-        const data = filteredByFirm
-            .filter((sheet) => sheet.planned2 !== '' && sheet.actual2 === '')
-            .map((sheet) => ({
-                indentNo: sheet.indentNumber,
-                firmNameMatch: sheet.firmNameMatch || '',
-                indenter: sheet.indenterName,
-                department: sheet.department,
-                product: sheet.productName,
-                quantity: sheet.approvedQuantity,
-                uom: sheet.uom,
-                vendorType: sheet.vendorType as VendorUpdateData['vendorType'],
-                planned2: sheet.planned2,
-                actual2: sheet.actual2,
-                specifications: sheet.specifications || '',
-            }));
-        
-        setTableData(data);
-        setFilteredTableData(data);
-    }, [indentSheet, user.firmNameMatch]);
+    const data = filteredByFirm
+        .filter((sheet) => sheet.planned2 && sheet.planned2 !== null && !sheet.actual2) // ✅ UPDATED: planned2 filled, actual2 empty
+        .map((sheet) => ({
+            indentNo: sheet.indentNumber,
+            firmNameMatch: sheet.firmNameMatch,
+            indenter: sheet.indenterName,
+            department: sheet.department,
+            product: sheet.productName,
+            quantity: sheet.approvedQuantity,
+            uom: sheet.uom,
+            vendorType: sheet.vendorType as VendorUpdateData['vendorType'],
+            planned2: sheet.planned2,
+            actual2: sheet.actual2,
+            specifications: sheet.specifications,
+        }));
 
-    useEffect(() => {
-        const filteredByFirm = indentSheet.filter(sheet =>
-            user.firmNameMatch.toLowerCase() === "all" || sheet.firmName === user.firmNameMatch
-        );
+    setTableData(data);
+    setFilteredTableData(data);
+}, [indentSheet, user.firmNameMatch]);
 
-        const data = filteredByFirm
-            .filter((sheet) => sheet.planned2 !== '' && sheet.actual2 !== '')
-            .map((sheet) => ({
-                date: formatDate(new Date(sheet.actual2)),
-                indentNo: sheet.indentNumber,
-                firmNameMatch: sheet.firmNameMatch || '',
-                indenter: sheet.indenterName,
-                department: sheet.department,
-                product: sheet.productName,
-                quantity: sheet.quantity,
-                uom: sheet.uom,
-                rate: sheet.approvedRate || 0,
-                vendorType: sheet.vendorType as HistoryData['vendorType'],
-                planned2: sheet.planned2,
-                actual2: sheet.actual2,
-                specifications: sheet.specifications || '',
-            }))
-            .sort((a, b) => {
-                return b.indentNo.localeCompare(a.indentNo);
-            });
-        
-        setHistoryData(data);
-        setFilteredHistoryData(data);
-    }, [indentSheet, user.firmNameMatch]);
+
+   // Fetching table data
+// Fetching history data
+useEffect(() => {
+    const filteredByFirm = indentSheet.filter((sheet) =>
+        user.firmNameMatch.toLowerCase() === "all" ||
+        sheet.firmName === user.firmNameMatch
+    );
+
+    const data = filteredByFirm
+        .filter((sheet) => sheet.planned2 && sheet.actual2) // ✅ BOTH must be filled
+        .map((sheet: any) => ({
+            indentNo: sheet.indentNumber,
+            firmNameMatch: sheet.firmNameMatch || '',
+            indenter: sheet.indenterName,
+            department: sheet.department,
+            product: sheet.productName,
+            quantity: sheet.approvedQuantity,
+            uom: sheet.uom,
+            rate: sheet.approvedRate || 0,
+            vendorType: sheet.vendorType as VendorUpdateData['vendorType'],
+            date: new Date(sheet.timestamp).toDateString(),
+            lastUpdated: sheet.lastUpdated,
+            planned2: sheet.planned2,
+            actual2: sheet.actual2,
+            specifications: sheet.specifications,
+        }));
+
+    setHistoryData(data);
+    setFilteredHistoryData(data);
+}, [indentSheet, user.firmNameMatch]);
+
 
     // Filter pending data by date, UOM, and search query
     useEffect(() => {

@@ -7,7 +7,7 @@ export type POMasterSheet = any; // Replace with actual type
 export type TallyEntrySheet = any; // Replace with actual type
 export type ReceivedSheet = any; // Replace with actual type
 export type PaymentHistorySheet = any; // Replace with actual type
-
+export type PIApprovalSheet = any; // Replace with actual type
 export type AllSheets = 
     | IndentSheet[]
     | StoreInSheet[]
@@ -17,8 +17,8 @@ export type AllSheets =
     | POMasterSheet[]
     | TallyEntrySheet[]
     | ReceivedSheet[]
-    | PaymentHistorySheet[];
-
+    | PaymentHistorySheet[]
+    | PIApprovalSheet[];
 export interface RouteAttributes {
     name: string;
     element: JSX.Element;

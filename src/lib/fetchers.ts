@@ -1,18 +1,29 @@
 import type { IndentSheet, MasterSheet, ReceivedSheet, Sheet, StoreInSheet } from '@/types';
-import type { InventorySheet, IssueSheet, PoMasterSheet, TallyEntrySheet, UserPermissions, Vendor, PcReportSheet } from '@/types/sheets';
+import type { 
+    InventorySheet, 
+    IssueSheet, 
+    PoMasterSheet, 
+    TallyEntrySheet, 
+    UserPermissions, 
+    Vendor, 
+    PcReportSheet,
+    PIApprovalSheet  // ✅ ONLY CHANGE: Added this import
+} from '@/types/sheets';
+
 
 // Add PaymentHistoryData interface
 export interface PaymentHistoryData {
   timestamp: string;
-  apPaymentNumber: number;
+  apPaymentNumber:string |number;
   status: string;
   uniqueNumber: string;
   fmsName: string;
   payTo: string;
-  amountToBePaid: number;
+  amountToBePaid:string |number;
   remarks: string;
   anyAttachments: string;
 }
+
 
 export async function uploadFile({
     file,
@@ -69,10 +80,11 @@ export async function uploadFile({
     return res.fileUrl as string;
 }
 
-// ✅ UPDATED: Add PaymentHistoryData[] to the return type
+
+// ✅ UPDATED: Add PaymentHistoryData[] and PIApprovalSheet[] to the return type
 export async function fetchSheet(
     sheetName: Sheet
-): Promise<MasterSheet | IndentSheet[] | ReceivedSheet[] | UserPermissions[] | PoMasterSheet[] | InventorySheet[] | StoreInSheet[] | IssueSheet[] | TallyEntrySheet[] | PcReportSheet[] | PaymentHistoryData[]> {
+): Promise<MasterSheet | IndentSheet[] | ReceivedSheet[] | UserPermissions[] | PoMasterSheet[] | InventorySheet[] | StoreInSheet[] | IssueSheet[] | TallyEntrySheet[] | PcReportSheet[] | PaymentHistoryData[] | PIApprovalSheet[]> {
     const url = `${import.meta.env.VITE_APP_SCRIPT_URL}?sheetName=${encodeURIComponent(sheetName)}`;
     const response = await fetch(url);
 
@@ -118,6 +130,48 @@ export async function fetchSheet(
         console.log(`✅ Processed ${filteredData.length} payment history records`);
         return filteredData;
     }
+
+    // ✅ ADD: PI Approval case
+if (sheetName === 'PI APPROVAL' ) {
+    console.log("📋 Processing PI Approval data:", raw.rows);
+    
+    if (!raw.rows || !Array.isArray(raw.rows)) {
+        console.warn("⚠️ No PI Approval rows found");
+        return [];
+    }
+
+    const piApprovalData = raw.rows.map((record: any) => {
+        console.log("📝 PI Approval record:", record);
+        
+        return {
+            rowIndex: record.rowIndex || 0,
+            timestamp: record.Timestamp || record.timestamp || '',
+            piNo: record['PI-No.'] || record.piNo || '',
+            indentNo: record['Indent No.'] || record.indentNo || '',
+            partyName: record['Party Name'] || record.partyName || '',
+            productName: record['Product Name'] || record.productName || '',
+            qty: parseFloat(record.Qty || record.qty || 0),
+            piAmount: parseFloat(record['P.I Amount'] || record.piAmount || 0),
+            piCopy: record['P.I Copy'] || record.piCopy || '',
+            poRateWithoutTax: parseFloat(record['Po Rate Without Tax'] || record.poRateWithoutTax || 0),
+            planned: record.Planned || record.planned || '',
+            actual: record.Actual || record.actual || '',
+            delay: record.Delay || record.delay || '',
+            status: record.Status || record.status || '',
+            approvalAmount: parseFloat(record['Approval Amoount'] || record.approvalAmount || 0),
+        } as PIApprovalSheet;
+    });
+
+       const filteredData = piApprovalData.filter((record: PIApprovalSheet) => 
+        record.timestamp || 
+        record.piNo || 
+        record.indentNo || 
+        record.partyName
+    );
+
+    console.log(`✅ Processed ${filteredData.length} PI Approval records`);
+    return filteredData;
+}
 
     if (sheetName === 'MASTER') {
         const data = raw.options;
@@ -387,6 +441,7 @@ export async function fetchSheet(
     return raw.rows.filter((r: IndentSheet) => r.timestamp !== '');
 }
 
+
 export async function postToSheet(
     data:
         | Partial<IndentSheet>[]
@@ -436,6 +491,7 @@ export async function postToSheet(
         throw error;
     }
 }
+
 
 export const postToIssueSheet = async (
     data: Partial<IssueSheet>[],

@@ -1,4 +1,17 @@
-export type Sheet = 'INDENT' | 'RECEIVED' | 'MASTER' | 'USER' | 'PO MASTER' | "INVENTORY" | "ISSUE" | "STORE IN" | "TALLY ENTRY" | "PC REPORT" | "Fullkitting" | "Payment History" ;
+export type Sheet = 
+    | 'INDENT' 
+    | 'RECEIVED' 
+    | 'MASTER' 
+    | 'USER' 
+    | 'PO MASTER' 
+    | 'INVENTORY' 
+    | 'ISSUE' 
+    | 'STORE IN' 
+    | 'TALLY ENTRY' 
+    | 'PC REPORT' 
+    | 'Fullkitting' 
+    | 'Payment History' 
+    | 'PI APPROVAL';  // ✅ Already included
 
 export type IndentSheet = {
     issuedStatus: any;
@@ -80,40 +93,42 @@ export type IndentSheet = {
     rowIndex: string;
     issueStatus: string;
     liftingStatus: string;
-    // pendingLiftQty: number;
-    pendingLiftQty: number
+    pendingLiftQty: number;
     firmNameMatch: string;
-    // advanceIfAny: string;
     paymentype: string;
-
-
-
 };
+
+// ✅ IMPROVED: Better field naming consistency
+export type PIApprovalSheet = {
+    rowIndex?: number;
+    timestamp: string;
+    piNo: string;                    // Maps to "PI-No."
+    indentNo: string;                // Maps to "Indent No."
+    partyName: string;               // Maps to "Party Name"
+    productName: string;             // Maps to "Product Name"
+    qty: number;                     // Maps to "Qty"
+    piAmount: number;                // Maps to "P.I Amount"
+    piCopy: string;                  // Maps to "P.I Copy" (URL to uploaded file)
+    poRateWithoutTax: number;        // Maps to "Po Rate Without Tax"
+    planned: string;                 // Maps to "Planned"
+    actual: string;                  // Maps to "Actual"
+    delay: string;                   // Maps to "Delay"
+    status: string;                  // Maps to "Status"
+    approvalAmount: number;          // Maps to "Approval Amoount" (note the typo in sheet)
+};
+
+// ✅ IMPROVED: Standardized field names
 export type PaymentHistory = {
     timestamp: string;
-    appaymentNumber?: string;
+    apPaymentNumber: string;         // Standardized to camelCase
     status: string;
-    uniquenumber?: string;
-    fmsName?: string;
-    payTo?: string;
-    amountToBepaid?: number;
-    remarks?: string;
-    anyAttachments?: string;
-    
-    // Alternative field names
-    'AP-Payment Number'?: string;
-    Status?: string;
-    'Unique Number'?: string;
-    UniqueNumber?: string;
-    uniqueNumber?: string;
-    'Fms Name'?: string;
-    'Pay To'?: string;
-    'Amount To Be Paid'?: number;
-    amountToBePaid?: number;
-    Remarks?: string;
-    'Any Attachments'?: string;
+    uniqueNumber: string;            // Standardized to camelCase
+    fmsName: string;
+    payTo: string;
+    amountToBePaid: number;          // Standardized to camelCase
+    remarks: string;
+    anyAttachments: string;
 };
-
 
 export type ReceivedSheet = {
     timestamp: string;
@@ -134,7 +149,6 @@ export type ReceivedSheet = {
     anyTransportations: string;
     transporterName: string;
     transportingAmount: number;
-
     actual6: string;
     damageOrder: string;
     quantityAsPerBill: string;
@@ -158,8 +172,8 @@ export type InventorySheet = {
     colorCode: string;
 };
 
-
 export type PoMasterSheet = {
+    rowIndex?: number;  // ✅ ADDED: Important for updates
     discountPercent: number;
     gstPercent: number;
     timestamp: string;
@@ -175,13 +189,16 @@ export type PoMasterSheet = {
     discount: number;
     amount: number;
     totalPoAmount: number;
-    // preparedBy: string;
-    // approvedBy: string;
+    preparedBy?: string;  // ✅ ADDED: Based on your sheet
+    approvedBy?: string;  // ✅ ADDED: Based on your sheet
     pdf: string;
     quotationNumber: string;
     quotationDate: string;
     enquiryNumber: string;
     enquiryDate: string;
+    deliveryDate?: string;  // ✅ ADDED: From your sheet
+    paymentTerms?: string;  // ✅ ADDED: From your sheet
+    numberOfDays?: number;  // ✅ ADDED: From your sheet
     term1: string;
     term2: string;
     term3: string;
@@ -195,7 +212,13 @@ export type PoMasterSheet = {
     deliveryDays: number;
     deliveryType: string;
     firmNameMatch: string;
-
+    
+    // ✅ ADDED: For PI Approval integration
+    piApprovalTimestamp?: string;
+    piQty?: number;
+    piAmount?: number;
+    piCopy?: string;
+    poRateWithoutTax?: number;
 };
 
 export type Vendor = {
@@ -204,7 +227,6 @@ export type Vendor = {
     address: string;
     email: string;
 };
-
 
 export type MasterSheet = {
     vendors: Vendor[];
@@ -224,17 +246,18 @@ export type MasterSheet = {
     firmsnames: string[];
     firms: string[];
     fmsNames: string[];
-    firmCompanyMap: Record<string, { companyName: string; companyAddress: string; destinationAddress: string; }>;
+    firmCompanyMap: Record<string, { 
+        companyName: string; 
+        companyAddress: string; 
+        destinationAddress: string; 
+    }>;
 };
 
-
-
 export type UserPermissions = {
-    rowIndex: number
+    rowIndex: number;
     username: string;
     password: string;
     name: string;
-
     administrate: boolean;
     createIndent: boolean;
     createPo: boolean;
@@ -263,10 +286,12 @@ export type UserPermissions = {
     returnMaterialToParty: boolean;
     exchangeMaterials: boolean;
     insteadOfQualityCheckInReceivedItem: boolean;
-    dbForPc : boolean;
-    billNotReceived:boolean;
+    dbForPc: boolean;
+    billNotReceived: boolean;
     storeIn: boolean;
     issueData: boolean;
+    piApprovalView?: boolean;  // ✅ ADDED: For PI Approval page access
+    piApprovalAction?: boolean;  // ✅ ADDED: For PI Approval actions
 };
 
 export const allPermissionKeys = [
@@ -300,33 +325,26 @@ export const allPermissionKeys = [
     "billNotReceived",
     "storeIn",
     "issueData",
+    "piApprovalView",    // ✅ ADDED
+    "piApprovalAction",  // ✅ ADDED
 ] as const;
-
-
 
 export type IssueSheet = {
     timestamp: string;
-     rowIndex: number;
-    issueNo: string;  // Changed from issueNumber to match "Issue No" -> issueNo
-    issueTo: string;  // Maps to "Issue to" column
+    rowIndex: number;
+    issueNo: string;
+    issueTo: string;
     uom: string;
     groupHead: string;
     productName: string;
     quantity: number;
-    department: string;  // Maps to "Store Status" column  
-
-
+    department: string;
     planned1?: string;
     actual1?: string;
     timeDelay1?: string;
     status: string;
-    givenQty?: number;    // Changed from givenQuantity to match "Given Qty" -> givenQty
-
-    // Remove fields that don't exist in the sheet:
-    // department, groupHead, specifications, etc.
-}
-
-
+    givenQty?: number;
+};
 
 export type StoreInSheet = {
     rowIndex?: number;
@@ -363,9 +381,6 @@ export type StoreInSheet = {
     priceAsPerPo: number;
     remark: string;
     debitNoteCopy: string;
-
-
-
     planned7: string;
     actual7: string;
     timeDelay7: string;
@@ -376,16 +391,12 @@ export type StoreInSheet = {
     actual8: string;
     delay8: string;
     statusPurchaser: string;
-
-
     planned9: string;
     actual9: string;
     timeDelay9: string;
-    // debitNoteCopy: string;
     billCopy: string;
     returnCopy: string;
     debitnotenumber: string;
-
     planned10: string;
     actual10: string;
     timeDelay10: string;
@@ -395,8 +406,6 @@ export type StoreInSheet = {
     billImage: string;
     exchangeQty: string;
     billNumber2: string;
-
-
     poDate: string;
     poNumber: string;
     vendor: string;
@@ -405,26 +414,17 @@ export type StoreInSheet = {
     uom: string;
     quantity: number;
     poCopy: string;
-
-
     planned11: string;
     actual11: string;
     billStatusNew: string;
-
     materialStatus: string;
-
     vehicleNo: string;
     driverName: string;
     driverMobileNo: string;
     billImageStatus: string;
-
     billRemark: string;
-
     firmNameMatch: string;
-
-}
-
-
+};
 
 export type TallyEntrySheet = {
     timestamp: string;
@@ -490,7 +490,6 @@ export type PcReportSheet = {
     pendingPmmpl: string | number;
     pendingRefrasynth: string | number;
 };
-
 
 export type FullkittingSheet = {
     rowIndex?: number;

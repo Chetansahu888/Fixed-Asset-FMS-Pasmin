@@ -758,9 +758,9 @@ useEffect(() => {
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
-                                                        <SelectItem value="Regular">
+                                                        {/* <SelectItem value="Regular">
                                                             Regular
-                                                        </SelectItem>
+                                                        </SelectItem> */}
                                                         <SelectItem value="Three Party">
                                                             Three Party
                                                         </SelectItem>

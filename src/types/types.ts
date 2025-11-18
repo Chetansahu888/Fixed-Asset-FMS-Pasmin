@@ -1,17 +1,37 @@
+// ✅ PAYMENT HISTORY - CORRECT
 export interface PaymentHistory {
   timestamp: string;
-  apPaymentNumber: string;
+  apPaymentNumber: string |number;
   status: string;
   uniqueNumber: string;
   fmsName: string;
   payTo: string;
-  amountToBePaid: number;
+  amountToBePaid: string |number;
   remarks: string;
   anyAttachments: string;
-  
 }
 
-// ✅ UPDATE SHEET TYPE TO INCLUDE PAYMENT HISTORY
+// ✅ PI APPROVAL - CORRECT
+export type PIApprovalSheet = {
+    rowIndex?: number;
+    timestamp: string;
+    piNo: string;
+    indentNo: string;
+    partyName: string;
+    productName: string;
+    qty: number;
+    piAmount: number;
+    piCopy: string;
+    poRateWithoutTax: number;
+    planned: string;
+    actual: string;
+    delay: string;
+    status: string;
+    approvalAmount: number;
+    record:any;
+};
+
+// ✅ SHEET TYPE - CORRECT (but standardize casing)
 export type Sheet = 
   | 'MASTER' 
   | 'INDENT' 
@@ -23,11 +43,13 @@ export type Sheet =
   | 'ISSUE' 
   | 'TALLY ENTRY' 
   | 'PC REPORT'
-  | 'FULLKITTING'
-  | 'Payment History'; // ✅ ADD THIS
+  | 'Fullkitting'      // ✅ Keep exact case from your backend
+  | 'Payment History'  // ✅ Keep exact case
+  | 'PI APPROVAL';     // ✅ Keep exact case
 
-// Your existing PoMasterSheet interface
+// ❌ NEEDS UPDATES - Missing critical fields for PI Approval integration
 export interface PoMasterSheet {
+    rowIndex?: number;  // ✅ CRITICAL: Added for updates
     timestamp: string;
     partyName: string;
     poNumber: string;
@@ -60,4 +82,20 @@ export interface PoMasterSheet {
     term10: string;
     discountPercent?: number;
     gstPercent?: number;
+    
+    // ✅ CRITICAL: Added fields from your PO MASTER sheet
+    deliveryDate?: string;
+    paymentTerms?: string;
+    numberOfDays?: number;
+    deliveryDays?: number;
+    deliveryType?: string;
+    emailSendStatus?: string;
+    firmNameMatch?: string;  // ✅ IMPORTANT: For firm filtering
+    
+    // ✅ CRITICAL: Added for PI Approval integration
+    piApprovalTimestamp?: string;  // When PI was approved
+    piQty?: number;                // PI quantity
+    piAmount?: number;             // PI amount
+    piCopy?: string;               // PI copy URL
+    poRateWithoutTax?: number;     // PO rate without tax
 }
