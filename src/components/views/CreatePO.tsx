@@ -209,7 +209,7 @@ export default () => {
     });
 
     type FormData = z.infer<typeof schema>;
-    const form = useForm<FormData>({
+    const form = useForm<z.infer<typeof schema>>({
         resolver: zodResolver(schema),
         defaultValues: {
             poNumber: '',
@@ -229,8 +229,8 @@ export default () => {
             deliveryDays: undefined,
             deliveryType: undefined,
             paymentTerms: undefined as any,
-            'Freight Payment': z.enum(['yes', 'no']).optional(),
-            'Guarantee': z.enum(['yes', 'no']).optional(),
+            'Freight Payment': undefined,
+            'Guarantee': undefined,
             numberOfDays: undefined,
         },
     });
