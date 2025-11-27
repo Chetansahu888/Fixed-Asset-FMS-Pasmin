@@ -91,33 +91,33 @@ const routes: RouteAttributes[] = [
         element: <Dashboard />,
         notifications: () => 0,
     },
-    {
-        path: 'store-issue',
-        gateKey: 'storeIssue',
-        name: 'Store Issue',
-        icon: <ClipboardList size={20} />,
-        element: <StoreIssue />,
-        notifications: () => 0,
-    },
+//     {
+//         path: 'store-issue',
+//         gateKey: 'storeIssue',
+//         name: 'Store Issue',
+//         icon: <ClipboardList size={20} />,
+//         element: <StoreIssue />,
+//         notifications: () => 0,
+//     },
 
-    {
-    path: 'Issue-data',
-    gateKey: 'issueData',
-    name: 'Issue Data',
-    icon: <ClipboardCheck size={20} />,
-    element: <IssueData />,
-    notifications: (issueSheet: any[]) =>
-        issueSheet.filter((sheet: any) =>
-            sheet.planned1 &&
-            sheet.planned1.toString().trim() !== '' &&
-            (!sheet.actual1 || sheet.actual1.toString().trim() === '')
-        ).length,
-},
+//     {
+//     path: 'Issue-data',
+//     gateKey: 'issueData',
+//     name: 'Issue Data',
+//     icon: <ClipboardCheck size={20} />,
+//     element: <IssueData />,
+//     notifications: (issueSheet: any[]) =>
+//         issueSheet.filter((sheet: any) =>
+//             sheet.planned1 &&
+//             sheet.planned1.toString().trim() !== '' &&
+//             (!sheet.actual1 || sheet.actual1.toString().trim() === '')
+//         ).length,
+// },
 
 
     {
         path: 'inventory',
-        name: 'Inventory',
+        name: 'Fixed Asset Register',
         icon: <Store size={20} />,
         element: <Inventory />,
         notifications: () => 0,
@@ -264,7 +264,7 @@ const routes: RouteAttributes[] = [
 
     {
     path: 'Make-Payment',
-    name: 'Make Payment',
+    name: 'Fixed Asset Payment ',
     icon: <FilePlus2 size={20} />,
     element: <MakePayment />,
     notifications: (sheets: any[]) =>

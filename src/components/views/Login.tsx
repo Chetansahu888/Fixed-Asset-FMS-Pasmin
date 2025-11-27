@@ -52,8 +52,8 @@ export default () => {
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit, onError)} className="grid gap-6">
                         <CardHeader className="text-center flex justify-center flex-col items-center">
-                            <Logo size={40} />
-                            <CardTitle className="font-bold text-3xl">Store App</CardTitle>
+                            <Logo size={150} />
+                            <CardTitle className="font-bold text-3xl">Fixed Aesset App</CardTitle>
                             <CardDescription>Please login to your account</CardDescription>
                         </CardHeader>
                         <CardContent className="grid gap-4">

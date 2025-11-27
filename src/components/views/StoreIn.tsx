@@ -130,6 +130,7 @@ interface StoreInSheetItem {
     priceAsPerPo?: number;
     remark?: string;
     firmNameMatch?: string;
+    productAsPerPack?: string; // ✅ ADD THIS LINE
     rowIndex?: number;
     poDate?: string;
     poNumber?: string;
@@ -321,6 +322,7 @@ export default () => {
         { accessorKey: 'billStatus', header: 'Bill Status' },
         { accessorKey: 'billNo', header: 'Bill No.' },
         { accessorKey: 'qty', header: 'Qty' },
+        { accessorKey: 'productAsPerPack', header: 'Product As Per Pack' },
         { accessorKey: 'leadTimeToLiftMaterial', header: 'Lead Time To Lift Material' },
         { accessorKey: 'typeOfBill', header: 'Type Of Bill' },
         { accessorKey: 'billAmount', header: 'Bill Amount' },
@@ -385,6 +387,7 @@ export default () => {
         photoOfProduct: z.instanceof(File).optional(),
         damageOrder: z.enum(['Yes', 'No']),
         quantityAsPerBill: z.enum(['Yes', 'No']),
+        productAsPerPack: z.enum(['Yes', 'No']), // ✅ ADD THIS LINE
         remark: z.string().optional(),
     });
 
@@ -398,6 +401,7 @@ export default () => {
             photoOfProduct: undefined,
             damageOrder: undefined,
             quantityAsPerBill: undefined,
+            productAsPerPack: undefined, // ✅ ADD THIS LINE
             remark: '',
         },
     });
@@ -412,6 +416,7 @@ export default () => {
                 photoOfProduct: undefined,
                 damageOrder: undefined,
                 quantityAsPerBill: undefined,
+                productAsPerPack: undefined, // ✅ ADD THIS LINE
                 remark: '',
             });
         }
@@ -452,6 +457,7 @@ export default () => {
                     photoOfProduct: photoUrl,
                     damageOrder: values.damageOrder,
                     quantityAsPerBill: values.quantityAsPerBill,
+                    productAsPerPack: values.productAsPerPack, // ✅ ADD THIS LINE
                     remark: values.remark,
                 })),
                 'update',
@@ -639,6 +645,29 @@ export default () => {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Quantity As Per Bill</FormLabel>
+                                                <FormControl>
+                                                    <Select
+                                                        onValueChange={field.onChange}
+                                                        value={field.value}
+                                                    >
+                                                        <SelectTrigger className="w-full">
+                                                            <SelectValue placeholder="Select" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="Yes">Yes</SelectItem>
+                                                            <SelectItem value="No">No</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="productAsPerPack"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Product As Per Pack</FormLabel>
                                                 <FormControl>
                                                     <Select
                                                         onValueChange={field.onChange}

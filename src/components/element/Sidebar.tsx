@@ -12,18 +12,19 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useSheets } from '@/context/SheetsContext';
 import type { RouteAttributes } from '@/types';
-import { LogOut, RotateCw, ShoppingCart } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { LogOut, RefreshCw } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Logo from './Logo';
 
-interface SidebarProps {
+interface AppSidebarProps {
     items: RouteAttributes[];
 }
 
-export default ({ items }: SidebarProps) => {
+export default function AppSidebar({ items }: AppSidebarProps) {
     const navigate = useNavigate();
-    // ✅ GET ALL SHEETS FROM CONTEXT
+    const location = useLocation();
+    
     const { 
         indentSheet, 
         storeInSheet, 
@@ -37,141 +38,183 @@ export default ({ items }: SidebarProps) => {
         updateAll, 
         allLoading 
     } = useSheets();
+    
     const { user, logout } = useAuth();
-    console.log("user", user);
 
-    const allItems = [...items];
-
-    return (
-        <Sidebar side="left" variant="inset" collapsible="offcanvas">
-            <SidebarHeader className="p-3 border-b-1">
-                <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-2">
-                        <Logo />
-
-                        <div>
-                            <h2 className="text-xl font-bold">Fixed Asset </h2>
-                            <p className="text-sm">Management System</p>
-                        </div>
-                    </div>
-                    <Button variant="ghost" className="size-7" onClick={() => updateAll()} disabled={allLoading}>
-                        <RotateCw />
-                    </Button>
-                </div>
-                <SidebarSeparator />
-                <div className="flex justify-between items-center px-3 text-xs text-muted-foreground">
-                    <div>
-                        <p>
-                            Name: <span className="font-semibold">{user.name}</span>
-                        </p>
-                        <p>
-                            Username: <span className="font-semibold">{user.username}</span>
-                        </p>
-                    </div>
-                    <Button variant="outline" className="size-8" onClick={() => logout()}>
-                        <LogOut />
-                    </Button>
-                </div>
-            </SidebarHeader>
-            <SidebarContent className="py-1 border-b-1">
-                <SidebarGroup>
-                    <SidebarMenu>
-                        {allItems
-    .filter((item) => {
-        // Check user permission
+    const filteredItems = items.filter((item) => {
         if (item.gateKey) {
-            return user[item.gateKey] === true || user[item.gateKey] === "true";
+            return user[item.gateKey as keyof typeof user] === true || 
+                   user[item.gateKey as keyof typeof user] === "true";
         }
         return true;
-    })
-    .map((item, i) => {
-        // ✅ DETERMINE WHICH SHEET TO USE BASED ON ROUTE PATH
-        let sheetData: any[] = [];
-        let notificationCount = 0;
+    });
 
-        // Only calculate if notification function exists
-        if (item.notifications) {
-            switch (item.path) {
-                case 'Issue-data':
-                case 'store-issue':
-                    sheetData = issueSheet || [];
-                    break;
-                case 'store-in':
-                    sheetData = storeInSheet || [];
-                    break;
-                case 'Full-Kiting':
-                    sheetData = fullkittingSheet || [];
-                    break;
-                case 'take-entry-by-tally':
-                    sheetData = tallyEntrySheet || [];
-                    break;
-                case 'po-history':
-                case 'create-po':
-                    sheetData = poMasterSheet || [];
-                    break;
-                case 'pending-poss':  // ✅ FIXED: Use indentSheet
-                    sheetData = indentSheet || [];
-                    break;
-                case 'Bill-Not-Received':  // ✅ ADD THIS
-                     sheetData = storeInSheet || [];
-                     break;
-                case 'audit-data':  // ✅ ADD THIS
-                    sheetData = tallyEntrySheet || [];
-                    break;
-                case 'Payment-Status':
-                    sheetData = paymentHistorySheet || [];
-                    break;
-                case 'DBforPc':
-                    sheetData = pcReportSheet || [];
-                    break;
-                case 'Quality-Check-In-Received-Item':
-                sheetData = storeInSheet || [];  // ✅ Use storeInSheet
-                    break;
-                case 'Send-Debit-Note':  // ✅ ADD THIS
-                sheetData = storeInSheet || [];
-                break;
-                default:
-                    // For all other indent-based routes
-                    sheetData = indentSheet || [];
-            }
-
-            // Calculate notification count with the correct sheet
-            notificationCount = item.notifications(sheetData);
+    const getSheetData = (path: string) => {
+        switch (path) {
+            case 'Issue-data':
+            case 'store-issue':
+                return issueSheet || [];
+            case 'store-in':
+                return storeInSheet || [];
+            case 'Full-Kiting':
+                return fullkittingSheet || [];
+            case 'take-entry-by-tally':
+                return tallyEntrySheet || [];
+            case 'po-history':
+            case 'create-po':
+                return poMasterSheet || [];
+            case 'pending-poss':
+                return indentSheet || [];
+            case 'Bill-Not-Received':
+            case 'Quality-Check-In-Received-Item':
+            case 'Send-Debit-Note':
+                return storeInSheet || [];
+            case 'audit-data':
+                return tallyEntrySheet || [];
+            case 'Payment-Status':
+                return paymentHistorySheet || [];
+            case 'DBforPc':
+                return pcReportSheet || [];
+            default:
+                return indentSheet || [];
         }
+    };
 
-        return (
-            <SidebarMenuItem key={i}>
-                <SidebarMenuButton
-                    className="transition-colors duration-200 rounded-md py-5 flex justify-between font-medium text-secondary-foreground"
-                    onClick={() => navigate(item.path)}
-                    isActive={window.location.pathname.slice(1) === item.path}
-                >
-                    <div className="flex gap-2 items-center">
-                        {item.icon}
-                        {item.name}
+    const getNotificationCount = (item: RouteAttributes) => {
+        if (!item.notifications) return 0;
+        
+        const sheetData = getSheetData(item.path);
+        return item.notifications(sheetData);
+    };
+
+    const isActivePath = (path: string) => {
+        return location.pathname.slice(1) === path;
+    };
+
+    return (
+        <Sidebar 
+            side="left" 
+            variant="inset" 
+            collapsible="offcanvas" 
+            className="border-r border-gray-300 bg-green-50 min-w-[280px]"
+        >
+            {/* Header Section */}
+            <SidebarHeader className="p-6 border-b border-gray-300 bg-green-50">
+                <div className="flex flex-col gap-4">
+                    {/* Logo and Title */}
+                    <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3">
+                                <Logo size={100} />
+                                <div className="flex flex-col">
+                                    <h2 className="text-lg font-bold text-gray-900">
+                                        Fixed Asset
+                                    </h2>
+                                    <p className="text-xs font-medium text-gray-600 uppercase">
+                                        MANAGEMENT SYSTEM
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
                     </div>
-                    {/* ✅ SHOW BADGE WITH CORRECT COUNT */}
-                    {notificationCount !== 0 && (
-                        <span className="bg-destructive text-secondary w-[1.3rem] h-[1.3rem] rounded-full text-xs grid place-items-center text-center">
-                            {notificationCount > 99 ? '99+' : notificationCount}
-                        </span>
-                    )}
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-        );
-    })}
 
+                    <SidebarSeparator className="bg-gray-300" />
+
+                    {/* User Info Card */}
+                    <div className="rounded-lg bg-green-100 p-3 border border-green-200">
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <div className="h-8 w-8 rounded-md bg-green-600 flex items-center justify-center text-white font-bold text-sm">
+                                    {user.name?.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-gray-900">
+                                        {user.name}
+                                    </p>
+                                    <p className="text-xs text-gray-600">
+                                        @{user.username}
+                                    </p>
+                                </div>
+                            </div>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => logout()}
+                                className="h-8 w-8 rounded-md border border-gray-300"
+                            >
+                                <LogOut className="h-4 w-4 text-gray-700" />
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </SidebarHeader>
+
+            {/* Navigation Menu */}
+            <SidebarContent className="flex-1 py-3 px-2">
+                <SidebarGroup>
+                    <SidebarMenu className="space-y-1">
+                        {filteredItems.map((item, index) => {
+                            const notificationCount = getNotificationCount(item);
+                            const isActive = isActivePath(item.path);
+
+                            return (
+                                <SidebarMenuItem key={index}>
+                                    <SidebarMenuButton
+                                        className={`rounded-lg py-3 px-3 flex justify-between items-center font-medium
+                                            ${isActive 
+                                                ? "bg-green-600 text-white border-l-4 border-green-700" 
+                                                : "text-gray-700 hover:bg-green-100 hover:text-gray-900 border-l-2 border-transparent"
+                                            }`}
+                                        onClick={() => navigate(item.path)}
+                                        isActive={isActive}
+                                    >
+                                        <div className="flex gap-3 items-center min-w-0 flex-1">
+                                            <div className={isActive ? "text-white" : "text-gray-600"}>
+                                                {item.icon}
+                                            </div>
+                                            <span className="font-medium text-sm truncate flex-1">
+                                                {item.name}
+                                            </span>
+                                        </div>
+                                        
+                                        {/* Notification Badge */}
+                                        {notificationCount > 0 && (
+                                            <div className="ml-2 flex-shrink-0">
+                                                <span className={`
+                                                    min-w-6 h-6 rounded-md px-1 text-xs font-bold
+                                                    bg-red-500 text-white 
+                                                    flex items-center justify-center
+                                                    ${notificationCount > 99 ? 'min-w-7 text-xs' : ''}
+                                                `}>
+                                                    {notificationCount > 99 ? '99+' : notificationCount}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            );
+                        })}
                     </SidebarMenu>
                 </SidebarGroup>
             </SidebarContent>
-            <SidebarFooter>
-                <div className="p-2 text-center text-sm">
-                    Powered by &#8208;{' '}
-                    <a className="text-primary" href="https://botivate.in" target="_blank">
-                        Botivate
-                    </a>
+
+            {/* Footer */}
+            <SidebarFooter className="p-4 border-t border-gray-300 bg-green-50">
+                <div className="text-center">
+                    <p className="text-sm text-gray-600">
+                        Powered by{' '}
+                        <a 
+                            className="font-medium text-green-600 hover:text-green-700" 
+                            href="https://botivate.in" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                        >
+                            Botivate
+                        </a>
+                    </p>
                 </div>
             </SidebarFooter>
         </Sidebar>
     );
-};
+}

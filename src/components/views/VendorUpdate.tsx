@@ -12,22 +12,21 @@ import {
     DialogHeader,
     DialogFooter,
     DialogClose,
-} from '../ui/dialog';
+} from '@/components/ui/dialog';
 import { postToSheet, uploadFile } from '@/lib/fetchers';
 import { z } from 'zod';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '../ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Input } from '../ui/input';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { PuffLoader as Loader } from 'react-spinners';
 import { toast } from 'sonner';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { UserCheck, PenSquare, Calendar, X, Search, Filter } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { UserCheck, PenSquare, Calendar, X, Search, Filter, Building, Package, User, CalendarDays } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import Heading from '../element/Heading';
 import { Pill } from '../ui/pill';
-import { formatDate } from '@/lib/utils';
 
 interface VendorUpdateData {
     indentNo: string;
@@ -83,72 +82,66 @@ export default () => {
     const [historySearchQuery, setHistorySearchQuery] = useState<string>('');
 
     // Fetching table data
-   // Fetching table data
-// Fetching table data
-useEffect(() => {
-    const filteredByFirm = indentSheet.filter((sheet) =>
-        user.firmNameMatch.toLowerCase() === "all" ||
-        sheet.firmName === user.firmNameMatch
-    );
+    useEffect(() => {
+        const filteredByFirm = indentSheet.filter((sheet) =>
+            user.firmNameMatch.toLowerCase() === "all" ||
+            sheet.firmName === user.firmNameMatch
+        );
 
-    const data = filteredByFirm
-        .filter((sheet) => sheet.planned2 && sheet.planned2 !== null && !sheet.actual2) // ✅ UPDATED: planned2 filled, actual2 empty
-        .map((sheet) => ({
-            indentNo: sheet.indentNumber,
-            firmNameMatch: sheet.firmNameMatch,
-            indenter: sheet.indenterName,
-            department: sheet.department,
-            product: sheet.productName,
-            quantity: sheet.approvedQuantity,
-            uom: sheet.uom,
-            vendorType: sheet.vendorType as VendorUpdateData['vendorType'],
-            planned2: sheet.planned2,
-            actual2: sheet.actual2,
-            specifications: sheet.specifications,
-        }));
+        const data = filteredByFirm
+            .filter((sheet) => sheet.planned2 && sheet.planned2 !== null && !sheet.actual2)
+            .map((sheet) => ({
+                indentNo: sheet.indentNumber,
+                firmNameMatch: sheet.firmNameMatch,
+                indenter: sheet.indenterName,
+                department: sheet.department,
+                product: sheet.productName,
+                quantity: sheet.approvedQuantity,
+                uom: sheet.uom,
+                vendorType: sheet.vendorType as VendorUpdateData['vendorType'],
+                planned2: sheet.planned2,
+                actual2: sheet.actual2,
+                specifications: sheet.specifications,
+            }));
 
-    setTableData(data);
-    setFilteredTableData(data);
-}, [indentSheet, user.firmNameMatch]);
+        setTableData(data);
+        setFilteredTableData(data);
+    }, [indentSheet, user.firmNameMatch]);
 
+    // Fetching history data
+    useEffect(() => {
+        const filteredByFirm = indentSheet.filter((sheet) =>
+            user.firmNameMatch.toLowerCase() === "all" ||
+            sheet.firmName === user.firmNameMatch
+        );
 
-   // Fetching table data
-// Fetching history data
-useEffect(() => {
-    const filteredByFirm = indentSheet.filter((sheet) =>
-        user.firmNameMatch.toLowerCase() === "all" ||
-        sheet.firmName === user.firmNameMatch
-    );
+        const data = filteredByFirm
+            .filter((sheet) => sheet.planned2 && sheet.actual2)
+            .map((sheet: any) => ({
+                indentNo: sheet.indentNumber,
+                firmNameMatch: sheet.firmNameMatch || '',
+                indenter: sheet.indenterName,
+                department: sheet.department,
+                product: sheet.productName,
+                quantity: sheet.approvedQuantity,
+                uom: sheet.uom,
+                rate: sheet.approvedRate || 0,
+                vendorType: sheet.vendorType as VendorUpdateData['vendorType'],
+                date: new Date(sheet.timestamp).toDateString(),
+                lastUpdated: sheet.lastUpdated,
+                planned2: sheet.planned2,
+                actual2: sheet.actual2,
+                specifications: sheet.specifications,
+            }));
 
-    const data = filteredByFirm
-        .filter((sheet) => sheet.planned2 && sheet.actual2) // ✅ BOTH must be filled
-        .map((sheet: any) => ({
-            indentNo: sheet.indentNumber,
-            firmNameMatch: sheet.firmNameMatch || '',
-            indenter: sheet.indenterName,
-            department: sheet.department,
-            product: sheet.productName,
-            quantity: sheet.approvedQuantity,
-            uom: sheet.uom,
-            rate: sheet.approvedRate || 0,
-            vendorType: sheet.vendorType as VendorUpdateData['vendorType'],
-            date: new Date(sheet.timestamp).toDateString(),
-            lastUpdated: sheet.lastUpdated,
-            planned2: sheet.planned2,
-            actual2: sheet.actual2,
-            specifications: sheet.specifications,
-        }));
-
-    setHistoryData(data);
-    setFilteredHistoryData(data);
-}, [indentSheet, user.firmNameMatch]);
-
+        setHistoryData(data);
+        setFilteredHistoryData(data);
+    }, [indentSheet, user.firmNameMatch]);
 
     // Filter pending data by date, UOM, and search query
     useEffect(() => {
         let filtered = [...tableData];
 
-        // Filter by date
         if (selectedDate) {
             filtered = filtered.filter(item => {
                 const itemDate = new Date(item.planned2).toISOString().split('T')[0];
@@ -156,12 +149,10 @@ useEffect(() => {
             });
         }
 
-        // Filter by UOM
         if (selectedUOM && selectedUOM !== '__all__') {
             filtered = filtered.filter(item => item.uom === selectedUOM);
         }
 
-        // Filter by search query
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
             filtered = filtered.filter(item => 
@@ -181,7 +172,6 @@ useEffect(() => {
     useEffect(() => {
         let filtered = [...historyData];
 
-        // Filter by date
         if (selectedHistoryDate) {
             filtered = filtered.filter(item => {
                 const itemDate = new Date(item.actual2).toISOString().split('T')[0];
@@ -189,12 +179,10 @@ useEffect(() => {
             });
         }
 
-        // Filter by UOM
         if (selectedHistoryUOM && selectedHistoryUOM !== '__all__') {
             filtered = filtered.filter(item => item.uom === selectedHistoryUOM);
         }
 
-        // Filter by search query
         if (historySearchQuery.trim()) {
             const query = historySearchQuery.toLowerCase();
             filtered = filtered.filter(item => 
@@ -268,7 +256,7 @@ useEffect(() => {
         setHistorySearchQuery('');
     };
 
-    // Creating table columns
+    // Creating table columns with enhanced styling
     const columns: ColumnDef<VendorUpdateData>[] = [
         ...(user.updateVendorAction
             ? [
@@ -277,13 +265,15 @@ useEffect(() => {
                     cell: ({ row }: { row: Row<VendorUpdateData> }) => {
                         const indent = row.original;
                         return (
-                            <div>
+                            <div className="flex justify-center">
                                 <DialogTrigger asChild>
                                     <Button
                                         variant="outline"
                                         onClick={() => {
                                             setSelectedIndent(indent);
+                                            setOpenDialog(true);
                                         }}
+                                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white border-0 font-semibold rounded-lg shadow-md"
                                     >
                                         Update
                                     </Button>
@@ -297,24 +287,47 @@ useEffect(() => {
         {
             accessorKey: 'indentNo',
             header: 'Indent No.',
+            cell: ({ getValue }) => (
+                <div className="text-center font-bold text-blue-700">
+                    {getValue() as string}
+                </div>
+            )
         },
         {
             accessorKey: 'firmNameMatch',
             header: 'Firm Name',
+            cell: ({ getValue }) => (
+                <div className="text-center">
+                    <Building className="inline mr-2 h-4 w-4 text-gray-600" />
+                    {getValue() as string}
+                </div>
+            )
         },
         {
             accessorKey: 'indenter',
             header: 'Indenter',
+            cell: ({ getValue }) => (
+                <div className="text-center">
+                    <User className="inline mr-2 h-4 w-4 text-gray-600" />
+                    {getValue() as string}
+                </div>
+            )
         },
         {
             accessorKey: 'department',
             header: 'Department',
+            cell: ({ getValue }) => (
+                <div className="text-center">
+                    <Building className="inline mr-2 h-4 w-4 text-gray-600" />
+                    {getValue() as string}
+                </div>
+            )
         },
         {
             accessorKey: 'specifications',
             header: 'Specifications',
             cell: ({ getValue }) => (
-                <div className="max-w-[200px] break-words whitespace-normal">
+                <div className="max-w-[200px] break-words whitespace-normal text-center bg-gray-50 p-2 rounded-lg">
                     {getValue() as string}
                 </div>
             ),
@@ -323,7 +336,8 @@ useEffect(() => {
             accessorKey: 'product',
             header: 'Product',
             cell: ({ getValue }) => (
-                <div className="max-w-[150px] break-words whitespace-normal">
+                <div className="max-w-[150px] break-words whitespace-normal text-center">
+                    <Package className="inline mr-2 h-4 w-4 text-gray-600" />
                     {getValue() as string}
                 </div>
             ),
@@ -331,10 +345,20 @@ useEffect(() => {
         {
             accessorKey: 'quantity',
             header: 'Quantity',
+            cell: ({ getValue }) => (
+                <div className="text-center font-semibold text-green-700">
+                    {getValue() as number}
+                </div>
+            )
         },
         {
             accessorKey: 'uom',
             header: 'UOM',
+            cell: ({ getValue }) => (
+                <div className="text-center font-medium">
+                    {getValue() as string}
+                </div>
+            )
         },
         {
             accessorKey: 'vendorType',
@@ -342,13 +366,24 @@ useEffect(() => {
             cell: ({ row }) => {
                 const status = row.original.vendorType;
                 const variant = status === 'Regular' ? 'primary' : 'secondary';
-                return <Pill variant={variant}>{status}</Pill>;
+                return (
+                    <div className="flex justify-center">
+                        <Pill variant={variant} className="font-bold">
+                            {status}
+                        </Pill>
+                    </div>
+                );
             },
         },
         { 
             accessorKey: 'planned2', 
-            header: 'Planned Date', 
-            cell: ({ row }) => formatDateTime(row.original.planned2) 
+            header: 'Planned Date',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    <CalendarDays className="inline mr-2 h-4 w-4 text-gray-600" />
+                    {formatDateTime(row.original.planned2)}
+                </div>
+            )
         },
     ];
 
@@ -359,16 +394,17 @@ useEffect(() => {
                     header: 'Action',
                     cell: ({ row }: { row: Row<HistoryData> }) => {
                         const indent = row.original;
-
                         return (
-                            <div>
+                            <div className="flex justify-center">
                                 <DialogTrigger asChild>
                                     <Button
                                         variant="outline"
                                         disabled={indent.vendorType === 'Three Party'}
                                         onClick={() => {
                                             setSelectedHistory(indent);
+                                            setOpenDialog(true);
                                         }}
+                                        className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white border-0 font-semibold rounded-lg shadow-md disabled:opacity-50"
                                     >
                                         Update
                                     </Button>
@@ -382,28 +418,57 @@ useEffect(() => {
         {
             accessorKey: 'date',
             header: 'Date',
+            cell: ({ getValue }) => (
+                <div className="text-center">
+                    <Calendar className="inline mr-2 h-4 w-4 text-gray-600" />
+                    {getValue() as string}
+                </div>
+            )
         },
         {
             accessorKey: 'indentNo',
             header: 'Indent No.',
+            cell: ({ getValue }) => (
+                <div className="text-center font-bold text-blue-700">
+                    {getValue() as string}
+                </div>
+            )
         },
         {
             accessorKey: 'firmNameMatch',
             header: 'Firm Name',
+            cell: ({ getValue }) => (
+                <div className="text-center">
+                    <Building className="inline mr-2 h-4 w-4 text-gray-600" />
+                    {getValue() as string}
+                </div>
+            )
         },
         {
             accessorKey: 'indenter',
             header: 'Indenter',
+            cell: ({ getValue }) => (
+                <div className="text-center">
+                    <User className="inline mr-2 h-4 w-4 text-gray-600" />
+                    {getValue() as string}
+                </div>
+            )
         },
         {
             accessorKey: 'department',
             header: 'Department',
+            cell: ({ getValue }) => (
+                <div className="text-center">
+                    <Building className="inline mr-2 h-4 w-4 text-gray-600" />
+                    {getValue() as string}
+                </div>
+            )
         },
         {
             accessorKey: 'specifications',
             header: 'Specifications',
             cell: ({ getValue }) => (
-                <div className="max-w-[200px] break-words whitespace-normal">
+                <div className="max-w-[200px] break-words whitespace-normal text-center bg-gray-50 p-2 rounded-lg">
                     {getValue() as string}
                 </div>
             ),
@@ -412,7 +477,8 @@ useEffect(() => {
             accessorKey: 'product',
             header: 'Product',
             cell: ({ getValue }) => (
-                <div className="max-w-[150px] break-words whitespace-normal">
+                <div className="max-w-[150px] break-words whitespace-normal text-center">
+                    <Package className="inline mr-2 h-4 w-4 text-gray-600" />
                     {getValue() as string}
                 </div>
             ),
@@ -422,25 +488,29 @@ useEffect(() => {
             header: 'Quantity',
             cell: ({ row }) => {
                 const isEditing = editingRow === row.original.indentNo;
-                return isEditing ? (
-                    <Input
-                        type="number"
-                        value={editValues.quantity ?? row.original.quantity}
-                        onChange={(e) => handleInputChange('quantity', Number(e.target.value))}
-                        className="w-20"
-                    />
-                ) : (
-                    <div className="flex items-center gap-2">
-                        {row.original.quantity}
-                        {user.updateVendorAction && (
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-4 w-4"
-                                onClick={() => handleEditClick(row.original)}
-                            >
-                                <PenSquare className="h-3 w-3" />
-                            </Button>
+                return (
+                    <div className="flex justify-center items-center gap-2">
+                        {isEditing ? (
+                            <Input
+                                type="number"
+                                value={editValues.quantity ?? row.original.quantity}
+                                onChange={(e) => handleInputChange('quantity', Number(e.target.value))}
+                                className="w-20 text-center border-2 border-green-500 rounded-lg"
+                            />
+                        ) : (
+                            <>
+                                <span className="font-semibold text-green-700">{row.original.quantity}</span>
+                                {user.updateVendorAction && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 hover:bg-green-100"
+                                        onClick={() => handleEditClick(row.original)}
+                                    >
+                                        <PenSquare className="h-3 w-3 text-green-600" />
+                                    </Button>
+                                )}
+                            </>
                         )}
                     </div>
                 );
@@ -454,9 +524,13 @@ useEffect(() => {
                 const vendorType = row.original.vendorType;
 
                 if (!rate && vendorType === 'Three Party') {
-                    return <span className="text-muted-foreground">Not Decided</span>;
+                    return <span className="text-muted-foreground text-center">Not Decided</span>;
                 }
-                return <>&#8377;{rate}</>;
+                return (
+                    <div className="text-center font-bold text-orange-600">
+                        &#8377;{rate}
+                    </div>
+                );
             },
         },
         {
@@ -464,24 +538,28 @@ useEffect(() => {
             header: 'UOM',
             cell: ({ row }) => {
                 const isEditing = editingRow === row.original.indentNo;
-                return isEditing ? (
-                    <Input
-                        value={editValues.uom ?? row.original.uom}
-                        onChange={(e) => handleInputChange('uom', e.target.value)}
-                        className="w-20"
-                    />
-                ) : (
-                    <div className="flex items-center gap-2">
-                        {row.original.uom}
-                        {user.updateVendorAction && editingRow !== row.original.indentNo && (
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-4 w-4"
-                                onClick={() => handleEditClick(row.original)}
-                            >
-                                <PenSquare className="h-3 w-3" />
-                            </Button>
+                return (
+                    <div className="flex justify-center items-center gap-2">
+                        {isEditing ? (
+                            <Input
+                                value={editValues.uom ?? row.original.uom}
+                                onChange={(e) => handleInputChange('uom', e.target.value)}
+                                className="w-20 text-center border-2 border-green-500 rounded-lg"
+                            />
+                        ) : (
+                            <>
+                                <span className="font-medium">{row.original.uom}</span>
+                                {user.updateVendorAction && editingRow !== row.original.indentNo && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 hover:bg-green-100"
+                                        onClick={() => handleEditClick(row.original)}
+                                    >
+                                        <PenSquare className="h-3 w-3 text-green-600" />
+                                    </Button>
+                                )}
+                            </>
                         )}
                     </div>
                 );
@@ -492,37 +570,42 @@ useEffect(() => {
             header: 'Vendor Type',
             cell: ({ row }) => {
                 const isEditing = editingRow === row.original.indentNo;
-                return isEditing ? (
-                    <Select
-                        value={editValues.vendorType ?? row.original.vendorType}
-                        onValueChange={(value) => handleInputChange('vendorType', value)}
-                    >
-                        <SelectTrigger className="w-[150px]">
-                            <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="Regular Vendor">Regular</SelectItem>
-                            <SelectItem value="Three Party">Three Party</SelectItem>
-                        </SelectContent>
-                    </Select>
-                ) : (
-                    <div className="flex items-center gap-2">
-                        <Pill
-                            variant={
-                                row.original.vendorType === 'Regular' ? 'primary' : 'secondary'
-                            }
-                        >
-                            {row.original.vendorType}
-                        </Pill>
-                        {user.updateVendorAction && editingRow !== row.original.indentNo && (
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-4 w-4"
-                                onClick={() => handleEditClick(row.original)}
+                return (
+                    <div className="flex justify-center items-center gap-2">
+                        {isEditing ? (
+                            <Select
+                                value={editValues.vendorType ?? row.original.vendorType}
+                                onValueChange={(value) => handleInputChange('vendorType', value)}
                             >
-                                <PenSquare className="h-3 w-3" />
-                            </Button>
+                                <SelectTrigger className="w-[150px] border-2 border-green-500">
+                                    <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Regular Vendor">Regular</SelectItem>
+                                    <SelectItem value="Three Party">Three Party</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        ) : (
+                            <>
+                                <Pill
+                                    variant={
+                                        row.original.vendorType === 'Regular' ? 'primary' : 'secondary'
+                                    }
+                                    className="font-bold"
+                                >
+                                    {row.original.vendorType}
+                                </Pill>
+                                {user.updateVendorAction && editingRow !== row.original.indentNo && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 hover:bg-green-100"
+                                        onClick={() => handleEditClick(row.original)}
+                                    >
+                                        <PenSquare className="h-3 w-3 text-green-600" />
+                                    </Button>
+                                )}
+                            </>
                         )}
                     </div>
                 );
@@ -531,18 +614,26 @@ useEffect(() => {
         {
             accessorKey: 'planned2',
             header: 'Planned Date',
-            cell: ({ row }) =>
-                row.original.planned2
-                    ? formatDateTime(row.original.planned2)
-                    : '-',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    <CalendarDays className="inline mr-2 h-4 w-4 text-gray-600" />
+                    {row.original.planned2
+                        ? formatDateTime(row.original.planned2)
+                        : '-'}
+                </div>
+            )
         },
         {
             accessorKey: 'actual2',
             header: 'Actual Date',
-            cell: ({ row }) =>
-                row.original.actual2
-                    ? formatDateTime(row.original.actual2)
-                    : '-',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    <CalendarDays className="inline mr-2 h-4 w-4 text-green-600" />
+                    {row.original.actual2
+                        ? formatDateTime(row.original.actual2)
+                        : '-'}
+                </div>
+            )
         },
         ...(user.updateVendorAction
             ? [
@@ -551,14 +642,20 @@ useEffect(() => {
                     cell: ({ row }: { row: Row<HistoryData> }) => {
                         const isEditing = editingRow === row.original.indentNo;
                         return isEditing ? (
-                            <div className="flex gap-2">
+                            <div className="flex justify-center gap-2">
                                 <Button
                                     size="sm"
                                     onClick={() => handleSaveEdit(row.original.indentNo)}
+                                    className="bg-green-600 hover:bg-green-700 text-white font-semibold"
                                 >
                                     Save
                                 </Button>
-                                <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                                <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    onClick={handleCancelEdit}
+                                    className="border-red-500 text-red-600 hover:bg-red-50 font-semibold"
+                                >
                                     Cancel
                                 </Button>
                             </div>
@@ -570,147 +667,142 @@ useEffect(() => {
     ];
 
     // Creating Regular Vendor form
- // Update the regularSchema to fix the rateType issue
-const regularSchema = z.object({
-    vendorName: z.string().min(1, "Vendor name is required"),
-    rateType: z.enum(['basic', 'withTax']), // Remove the empty string option
-    rate: z.coerce.number().gt(0, "Rate must be greater than 0"),
-    withTax: z.enum(['yes', 'no']).optional(),
-    gstPercent: z.coerce.number().optional(),
-    paymentTerm: z.string().min(1, "Payment term is required"),
-});
+    const regularSchema = z.object({
+        vendorName: z.string().min(1, "Vendor name is required"),
+        rateType: z.enum(['basic', 'withTax']),
+        rate: z.coerce.number().gt(0, "Rate must be greater than 0"),
+        withTax: z.enum(['yes', 'no']).optional(),
+        gstPercent: z.coerce.number().optional(),
+        paymentTerm: z.string().min(1, "Payment term is required"),
+    });
 
-// Define the proper type for the regular form
-type RegularFormValues = z.infer<typeof regularSchema>;
+    type RegularFormValues = z.infer<typeof regularSchema>;
 
-// Fix the useForm hook with proper typing
-const regularForm = useForm<RegularFormValues>({
-    resolver: zodResolver(regularSchema),
-    defaultValues: {
-        vendorName: '',
-        rateType: 'basic', // Set a default value instead of empty string
-        rate: 0,
-        withTax: 'no',
-        gstPercent: 0,
-        paymentTerm: '',
-    },
-});
-const watchRateType = regularForm.watch('rateType');
-const watchWithTax = regularForm.watch('withTax');
+    const regularForm = useForm<RegularFormValues>({
+        resolver: zodResolver(regularSchema),
+        defaultValues: {
+            vendorName: '',
+            rateType: 'basic',
+            rate: 0,
+            withTax: 'no',
+            gstPercent: 0,
+            paymentTerm: '',
+        },
+    });
+
+    const watchRateType = regularForm.watch('rateType');
+    const watchWithTax = regularForm.watch('withTax');
 
     async function onSubmitRegular(values: z.infer<typeof regularSchema>) {
-    try {
-        // Determine values for spreadsheet columns
-        const rateTypeText = values.rateType === 'basic' ? 'Basic Rate' : 'With Tax';
-        let withTaxOrNot = '';
-        let taxValue = 0;
-        let finalRate = values.rate;
-        
-        if (values.rateType === 'basic') {
-            if (values.withTax === 'yes') {
-                withTaxOrNot = 'Yes';  // ✅ Store "Yes"
+        try {
+            const rateTypeText = values.rateType === 'basic' ? 'Basic Rate' : 'With Tax';
+            let withTaxOrNot = '';
+            let taxValue = 0;
+            let finalRate = values.rate;
+            
+            if (values.rateType === 'basic') {
+                if (values.withTax === 'yes') {
+                    withTaxOrNot = 'Yes';
+                    taxValue = 0;
+                } else if (values.withTax === 'no') {
+                    withTaxOrNot = 'No';
+                    taxValue = values.gstPercent || 0;
+                    finalRate = values.rate * (1 + taxValue / 100);
+                }
+            } else {
+                withTaxOrNot = 'Yes';
                 taxValue = 0;
-            } else if (values.withTax === 'no') {
-                withTaxOrNot = 'No';   // ✅ Store "No"
-                taxValue = values.gstPercent || 0;
-                // Calculate final rate with GST
-                finalRate = values.rate * (1 + taxValue / 100);
             }
-        } else {
-            // Rate type is "With Tax"
-            withTaxOrNot = 'Yes';  // ✅ Store "Yes"
-            taxValue = 0;
-        }
 
-        await postToSheet(
-            indentSheet
-                .filter((s) => s.indentNumber === selectedIndent?.indentNo)
-                .map((prev) => ({
-                    rowIndex: prev.rowIndex,
-                    actual2: new Date().toISOString(),
-                    vendorName1: values.vendorName,
-                    selectRateType1: rateTypeText,           // "Basic Rate" or "With Tax"
-                    rate1: values.rate.toString(),            // Original rate entered
-                    withTaxOrNot1: withTaxOrNot,             // ✅ "Yes" or "No"
-                    taxValue1: taxValue.toString(),           // GST % (0, 5, 12, 18, 28)
-                    paymentTerm1: values.paymentTerm,
-                    approvedVendorName: values.vendorName,
-                    approvedRate: finalRate,                  // Final calculated rate
-                    approvedPaymentTerm: values.paymentTerm,
-                    lastUpdated: new Date().toISOString(),
-                })),
-            'update'
-        );
-        
-        toast.success(`Updated vendor of ${selectedIndent?.indentNo}`);
-        setOpenDialog(false);
-        regularForm.reset();
-        setTimeout(() => updateIndentSheet(), 1000);
-    } catch (error) {
-        console.error('Error updating vendor:', error);
-        toast.error('Failed to update vendor');
+            await postToSheet(
+                indentSheet
+                    .filter((s) => s.indentNumber === selectedIndent?.indentNo)
+                    .map((prev) => ({
+                        rowIndex: prev.rowIndex,
+                        actual2: new Date().toISOString(),
+                        vendorName1: values.vendorName,
+                        selectRateType1: rateTypeText,
+                        rate1: values.rate.toString(),
+                        withTaxOrNot1: withTaxOrNot,
+                        taxValue1: taxValue.toString(),
+                        paymentTerm1: values.paymentTerm,
+                        approvedVendorName: values.vendorName,
+                        approvedRate: finalRate,
+                        approvedPaymentTerm: values.paymentTerm,
+                        lastUpdated: new Date().toISOString(),
+                    })),
+                'update'
+            );
+            
+            toast.success(`Updated vendor of ${selectedIndent?.indentNo}`);
+            setOpenDialog(false);
+            regularForm.reset();
+            setTimeout(() => updateIndentSheet(), 1000);
+        } catch (error) {
+            console.error('Error updating vendor:', error);
+            toast.error('Failed to update vendor');
+        }
     }
-}
 
     // Creating Three Party Vendor form
     const threePartySchema = z.object({
-    comparisonSheet: z.instanceof(File).optional(),
-    productCode: z.string().optional(),
-    vendors: z
-        .array(
-            z.object({
-                vendorName: z.string().nonempty(),
-                rateType: z.enum(['basic', 'withTax']),
-                rate: z.coerce.number().gt(0),
-                withTax: z.enum(['yes', 'no']).optional(),
-                gstPercent: z.coerce.number().optional(),
-                paymentTerm: z.string().nonempty(),
-                whatsappNumber: z.string().nonempty(),
-                emailId: z.string().email().nonempty(),
-            })
-        )
-        .max(3)
-        .min(3),
-});
+        comparisonSheet: z.instanceof(File).optional(),
+        productCode: z.string().optional(),
+        vendors: z
+            .array(
+                z.object({
+                    vendorName: z.string().nonempty(),
+                    rateType: z.enum(['basic', 'withTax']),
+                    rate: z.coerce.number().gt(0),
+                    withTax: z.enum(['yes', 'no']).optional(),
+                    gstPercent: z.coerce.number().optional(),
+                    paymentTerm: z.string().nonempty(),
+                    whatsappNumber: z.string().nonempty(),
+                    emailId: z.string().email().nonempty(),
+                })
+            )
+            .max(3)
+            .min(3),
+    });
 
     const threePartyForm = useForm<z.infer<typeof threePartySchema>>({
-    resolver: zodResolver(threePartySchema),
-    defaultValues: {
-        productCode: '',
-        vendors: [
-            {
-                vendorName: '',
-                rateType: undefined, // ✅ Not selected by default
-                rate: 0,
-                withTax: 'no',
-                gstPercent: 0,
-                paymentTerm: '',
-                whatsappNumber: '',
-                emailId: '',
-            },
-            {
-                vendorName: '',
-                rateType: undefined,
-                rate: 0,
-                withTax: 'no',
-                gstPercent: 0,
-                paymentTerm: '',
-                whatsappNumber: '',
-                emailId: '',
-            },
-            {
-                vendorName: '',
-                rateType: undefined,
-                rate: 0,
-                withTax: 'no',
-                gstPercent: 0,
-                paymentTerm: '',
-                whatsappNumber: '',
-                emailId: '',
-            },
-        ],
-    },
-});
+        resolver: zodResolver(threePartySchema),
+        defaultValues: {
+            productCode: '',
+            vendors: [
+                {
+                    vendorName: '',
+                    rateType: 'basic',
+                    rate: 0,
+                    withTax: 'no',
+                    gstPercent: 0,
+                    paymentTerm: '',
+                    whatsappNumber: '',
+                    emailId: '',
+                },
+                {
+                    vendorName: '',
+                    rateType: 'basic',
+                    rate: 0,
+                    withTax: 'no',
+                    gstPercent: 0,
+                    paymentTerm: '',
+                    whatsappNumber: '',
+                    emailId: '',
+                },
+                {
+                    vendorName: '',
+                    rateType: 'basic',
+                    rate: 0,
+                    withTax: 'no',
+                    gstPercent: 0,
+                    paymentTerm: '',
+                    whatsappNumber: '',
+                    emailId: '',
+                },
+            ],
+        },
+    });
 
     const { fields } = useFieldArray({
         control: threePartyForm.control,
@@ -718,112 +810,99 @@ const watchWithTax = regularForm.watch('withTax');
     });
 
     async function onSubmitThreeParty(values: z.infer<typeof threePartySchema>) {
-    try {
-        let url: string = '';
+        try {
+            let url: string = '';
 
-        if (values.comparisonSheet) {
-            url = await uploadFile({
-                file: values.comparisonSheet,
-                folderId: import.meta.env.VITE_COMPARISON_SHEET_FOLDER,
-            });
-        }
-
-        // Process each vendor's rate type data
-        const processVendorData = (vendor: typeof values.vendors[0]) => {
-            const rateTypeText = vendor.rateType === 'basic' ? 'Basic Rate' : 'With Tax';
-            let withTaxOrNot = '';
-            let taxValue = 0;
-            
-            if (vendor.rateType === 'basic') {
-                if (vendor.withTax === 'yes') {
-                    withTaxOrNot = 'Yes';
-                    taxValue = 0;
-                } else if (vendor.withTax === 'no') {
-                    withTaxOrNot = 'No';
-                    taxValue = vendor.gstPercent || 0;
-                }
-            } else {
-                withTaxOrNot = 'Yes';
-                taxValue = 0;
+            if (values.comparisonSheet) {
+                url = await uploadFile({
+                    file: values.comparisonSheet,
+                    folderId: import.meta.env.VITE_COMPARISON_SHEET_FOLDER,
+                });
             }
 
-            return {
-                rateType: rateTypeText,
-                rate: vendor.rate,
-                withTaxOrNot,
-                taxValue,
+            const processVendorData = (vendor: typeof values.vendors[0]) => {
+                const rateTypeText = vendor.rateType === 'basic' ? 'Basic Rate' : 'With Tax';
+                let withTaxOrNot = '';
+                let taxValue = 0;
+                
+                if (vendor.rateType === 'basic') {
+                    if (vendor.withTax === 'yes') {
+                        withTaxOrNot = 'Yes';
+                        taxValue = 0;
+                    } else if (vendor.withTax === 'no') {
+                        withTaxOrNot = 'No';
+                        taxValue = vendor.gstPercent || 0;
+                    }
+                } else {
+                    withTaxOrNot = 'Yes';
+                    taxValue = 0;
+                }
+
+                return {
+                    rateType: rateTypeText,
+                    rate: vendor.rate,
+                    withTaxOrNot,
+                    taxValue,
+                };
             };
-        };
 
-        const vendor1Data = processVendorData(values.vendors[0]);
-        const vendor2Data = processVendorData(values.vendors[1]);
-        const vendor3Data = processVendorData(values.vendors[2]);
+            const vendor1Data = processVendorData(values.vendors[0]);
+            const vendor2Data = processVendorData(values.vendors[1]);
+            const vendor3Data = processVendorData(values.vendors[2]);
 
-        await postToSheet(
-            indentSheet
-                .filter((s) => s.indentNumber === selectedIndent?.indentNo)
-                .map((prev) => ({
-                    rowIndex: prev.rowIndex,
-                    actual2: new Date().toISOString(),
-                    
-                    // Vendor 1 - Matching your spreadsheet columns exactly
-                    vendorName1: values.vendors[0].vendorName,
-                    selectRateType1: vendor1Data.rateType,        // "Select Rate Type 1"
-                    rate1: vendor1Data.rate.toString(),            // "Rate 1"
-                    withTaxOrNot1: vendor1Data.withTaxOrNot,      // "With Tax or Not 1"
-                    taxValue1: vendor1Data.taxValue.toString(),    // "Tax Value 1"
-                    paymentTerm1: values.vendors[0].paymentTerm,   // "Payment Term 1"
-                    whatsappNumber1: values.vendors[0].whatsappNumber, // "Whatsapp Number 1"
-                    emailId1: values.vendors[0].emailId,           // "Email Id 1"
-                    
-                    // Vendor 2 - Matching your spreadsheet columns exactly
-                    vendorName2: values.vendors[1].vendorName,     // "Vendor Name 2"
-                    selectRateType2: vendor2Data.rateType,        // "Select Rate Type 2"
-                    rate2: vendor2Data.rate.toString(),            // "Rate 2"
-                    withTaxOrNot2: vendor2Data.withTaxOrNot,      // "With Tax or Not 2"
-                    taxValue2: vendor2Data.taxValue.toString(),    // "Tax Value 2"
-                    paymentTerm2: values.vendors[1].paymentTerm,   // "Payment Term 2"
-                    whatsappNumber2: values.vendors[1].whatsappNumber, // "Whatsapp Number 2"
-                    emailId2: values.vendors[1].emailId,           // "Email Id 2"
-                    
-                    // Vendor 3 - Matching your spreadsheet columns exactly
-                    vendorName3: values.vendors[2].vendorName,     // "Vendor Name 3"
-                    selectRateType3: vendor3Data.rateType,        // "Select Rate Type 3"
-                    rate3: vendor3Data.rate.toString(),            // "Rate 3"
-                    withTaxOrNot3: vendor3Data.withTaxOrNot,      // "With Tax or Not 3"
-                    taxValue3: vendor3Data.taxValue.toString(),    // "Tax Value 3"
-                    paymentTerm3: values.vendors[2].paymentTerm,   // "Payment Term 3"
-                    whatsappNumber3: values.vendors[2].whatsappNumber, // "Whatsapp Number 3"
-                    emailId3: values.vendors[2].emailId,           // "Email Id 3"
-                    
-                    comparisonSheet: url,
-                    productCode: values.productCode || '',
-                    lastUpdated: new Date().toISOString(),
-                })),
-            'update'
-        );
-        
-        toast.success(`Updated vendors of ${selectedIndent?.indentNo}`);
-        setOpenDialog(false);
-        threePartyForm.reset();
-        setTimeout(() => updateIndentSheet(), 1000);
-    } catch (error) {
-        console.error('Error updating vendors:', error);
-        toast.error('Failed to update vendors');
+            await postToSheet(
+                indentSheet
+                    .filter((s) => s.indentNumber === selectedIndent?.indentNo)
+                    .map((prev) => ({
+                        rowIndex: prev.rowIndex,
+                        actual2: new Date().toISOString(),
+                        
+                        // Vendor 1
+                        vendorName1: values.vendors[0].vendorName,
+                        selectRateType1: vendor1Data.rateType,
+                        rate1: vendor1Data.rate.toString(),
+                        withTaxOrNot1: vendor1Data.withTaxOrNot,
+                        taxValue1: vendor1Data.taxValue.toString(),
+                        paymentTerm1: values.vendors[0].paymentTerm,
+                        whatsappNumber1: values.vendors[0].whatsappNumber,
+                        emailId1: values.vendors[0].emailId,
+                        
+                        // Vendor 2
+                        vendorName2: values.vendors[1].vendorName,
+                        selectRateType2: vendor2Data.rateType,
+                        rate2: vendor2Data.rate.toString(),
+                        withTaxOrNot2: vendor2Data.withTaxOrNot,
+                        taxValue2: vendor2Data.taxValue.toString(),
+                        paymentTerm2: values.vendors[1].paymentTerm,
+                        whatsappNumber2: values.vendors[1].whatsappNumber,
+                        emailId2: values.vendors[1].emailId,
+                        
+                        // Vendor 3
+                        vendorName3: values.vendors[2].vendorName,
+                        selectRateType3: vendor3Data.rateType,
+                        rate3: vendor3Data.rate.toString(),
+                        withTaxOrNot3: vendor3Data.withTaxOrNot,
+                        taxValue3: vendor3Data.taxValue.toString(),
+                        paymentTerm3: values.vendors[2].paymentTerm,
+                        whatsappNumber3: values.vendors[2].whatsappNumber,
+                        emailId3: values.vendors[2].emailId,
+                        
+                        comparisonSheet: url,
+                        productCode: values.productCode || '',
+                        lastUpdated: new Date().toISOString(),
+                    })),
+                'update'
+            );
+            
+            toast.success(`Updated vendors of ${selectedIndent?.indentNo}`);
+            setOpenDialog(false);
+            threePartyForm.reset();
+            setTimeout(() => updateIndentSheet(), 1000);
+        } catch (error) {
+            console.error('Error updating vendors:', error);
+            toast.error('Failed to update vendors');
+        }
     }
-}
-
-    const formatDateTime = (isoString?: string) => {
-        if (!isoString) return '-';
-        const date = new Date(isoString);
-        const day = date.getDate().toString().padStart(2, "0");
-        const month = (date.getMonth() + 1).toString().padStart(2, "0");
-        const year = date.getFullYear();
-        const hours = date.getHours().toString().padStart(2, "0");
-        const minutes = date.getMinutes().toString().padStart(2, "0");
-        const seconds = date.getSeconds().toString().padStart(2, "0");
-        return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
-    };
 
     // History Update form
     const historyUpdateSchema = z.object({
@@ -858,7 +937,7 @@ const watchWithTax = regularForm.watch('withTax');
             );
             toast.success(`Updated rate of ${selectedHistory?.indentNo}`);
             setOpenDialog(false);
-            historyUpdateForm.reset({ rate: undefined });
+            historyUpdateForm.reset({ rate: 0 });
             setTimeout(() => updateIndentSheet(), 1000);
         } catch {
             toast.error('Failed to update vendor');
@@ -870,737 +949,764 @@ const watchWithTax = regularForm.watch('withTax');
         toast.error('Please fill all required fields');
     }
 
+    const formatDateTime = (isoString?: string) => {
+        if (!isoString) return '-';
+        const date = new Date(isoString);
+        const day = date.getDate().toString().padStart(2, "0");
+        const month = (date.getMonth() + 1).toString().padStart(2, "0");
+        const year = date.getFullYear();
+        const hours = date.getHours().toString().padStart(2, "0");
+        const minutes = date.getMinutes().toString().padStart(2, "0");
+        const seconds = date.getSeconds().toString().padStart(2, "0");
+        return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    };
+
     return (
-        <div>
-            <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-                <Tabs defaultValue="pending">
-                    <Heading
-                        heading="Vendor Rate Update"
-                        subtext="Update vendors for Regular and Three Party indents"
-                        tabs
-                    >
-                        <UserCheck size={50} className="text-primary" />
-                    </Heading>
-                   <TabsContent value="pending">
-  {/* Compact Centered Filters for Pending Tab */}
-  <div className="flex flex-col sm:flex-row gap-3 mb-4 items-center justify-center p-4 bg-muted/30 rounded-lg border">
-    {/* Date Filter */}
-    <div className="w-full sm:w-auto">
-  <div className="flex gap-2 items-center">
-    {/* <Calendar className="w-4 h-4 text-muted-foreground" /> */}
-    <Input
-      type="date"
-      value={selectedDate}
-      onChange={(e) => setSelectedDate(e.target.value)}
-      className="w-32 sm:w-36"
-      placeholder="Select Date"
-    />
-    {selectedDate && (
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => setSelectedDate('')}
-        className="h-9 w-9"
-      >
-        <X className="h-3 w-3" />
-      </Button>
-    )}
-  </div>
-</div>
-    {/* UOM Filter */}
-    <div className="w-full sm:w-auto">
-      <Select value={selectedUOM} onValueChange={setSelectedUOM}>
-        <SelectTrigger className="w-32 sm:w-36">
-          <SelectValue placeholder="UOM" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="__all__">All UOMs</SelectItem>
-          {uniqueUOMs.map((uom) => (
-            <SelectItem key={uom} value={uom}>
-              {uom}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-
-    {/* Search */}
-    <div className="w-full sm:flex-1 max-w-md">
-      <div className="relative">
-        <Input
-          placeholder="Search..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pr-9"
-        />
-        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-      </div>
-    </div>
-
-    {/* Clear All Button */}
-    {(selectedDate || selectedUOM || searchQuery) && (
-      <Button
-        variant="outline"
-        onClick={clearAllFilters}
-        className="w-full sm:w-auto flex items-center gap-2"
-      >
-        <Filter className="h-3 w-3" />
-        Clear
-      </Button>
-    )}
-  </div>
-
-  <DataTable
-    data={filteredTableData}
-    columns={columns}
-    searchFields={[]}
-    dataLoading={indentLoading}
-  />
-</TabsContent>
-
-                    <TabsContent value="history">
-  {/* Compact Centered Filters for History Tab */}
-  <div className="flex flex-col sm:flex-row gap-3 mb-4 items-center justify-center p-4 bg-muted/30 rounded-lg border">
-    {/* Date Filter */}
-    <div className="w-full sm:w-auto">
-  <div className="flex gap-2 items-center">
-    {/* <Calendar className="w-4 h-4 text-muted-foreground" /> */}
-    <Input
-      type="date"
-      value={selectedDate}
-      onChange={(e) => setSelectedDate(e.target.value)}
-      className="w-32 sm:w-36"
-      placeholder="Select Date"
-    />
-    {selectedDate && (
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => setSelectedDate('')}
-        className="h-9 w-9"
-      >
-        <X className="h-3 w-3" />
-      </Button>
-    )}
-  </div>
-</div>
-
-    {/* UOM Filter */}
-    <div className="w-full sm:w-auto">
-      <Select value={selectedHistoryUOM} onValueChange={setSelectedHistoryUOM}>
-        <SelectTrigger className="w-32 sm:w-36">
-          <SelectValue placeholder="UOM" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="__all__">All UOMs</SelectItem>
-          {uniqueHistoryUOMs.map((uom) => (
-            <SelectItem key={uom} value={uom}>
-              {uom}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-
-    {/* Search */}
-    <div className="w-full sm:flex-1 max-w-md">
-      <div className="relative">
-        <Input
-          placeholder="Search..."
-          value={historySearchQuery}
-          onChange={(e) => setHistorySearchQuery(e.target.value)}
-          className="pr-9"
-        />
-        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-      </div>
-    </div>
-
-    {/* Clear All Button */}
-    {(selectedHistoryDate || selectedHistoryUOM || historySearchQuery) && (
-      <Button
-        variant="outline"
-        onClick={clearAllHistoryFilters}
-        className="w-full sm:w-auto flex items-center gap-2"
-      >
-        <Filter className="h-3 w-3" />
-        Clear
-      </Button>
-    )}
-  </div>
-
-  <DataTable
-    data={filteredHistoryData}
-    columns={historyColumns}
-    searchFields={[]}
-    dataLoading={indentLoading}
-  />
-</TabsContent>
-                </Tabs>
-                {selectedIndent &&
-                    (selectedIndent.vendorType === 'Three Party' ? (
-                        <DialogContent>
-                            <Form {...threePartyForm}>
-                                <form
-                                    onSubmit={threePartyForm.handleSubmit(
-                                        onSubmitThreeParty,
-                                        onError
-                                    )}
-                                    className="space-y-7"
-                                >
-                                    <DialogHeader className="space-y-1">
-                                        <DialogTitle>Three Party Vendors</DialogTitle>
-                                        <DialogDescription>
-                                            Update vendors for{' '}
-                                            <span className="font-medium">
-                                                {selectedIndent.indentNo}
-                                            </span>
-                                        </DialogDescription>
-                                    </DialogHeader>
-
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-muted py-2 px-5 rounded-md ">
-                                        <div className="space-y-1">
-                                            <p className="font-medium">Indenter</p>
-                                            <p className="text-sm font-light">
-                                                {selectedIndent.indenter}
-                                            </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="font-medium">Department</p>
-                                            <p className="text-sm font-light">
-                                                {selectedIndent.department}
-                                            </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="font-medium">Product</p>
-                                            <p className="text-sm font-light">
-                                                {selectedIndent.product}
-                                            </p>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-6">
+            <div className="max-w-7xl mx-auto">
+                <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+                    <Tabs defaultValue="pending">
+                        <Heading
+                            heading="Vendor Rate Update"
+                            subtext="Update vendors for Regular and Three Party indents"
+                            tabs
+                        >
+                            <UserCheck size={50} className="text-blue-600" />
+                        </Heading>
+                        
+                        <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-100 p-6 mb-6">
+                            <TabsContent value="pending" className="mt-0">
+                                {/* Enhanced Filter Section */}
+                                <div className="flex flex-col sm:flex-row gap-3 mb-6 items-center justify-center p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl border-2 border-gray-200">
+                                    {/* Date Filter */}
+                                    <div className="w-full sm:w-auto">
+                                        <div className="flex gap-2 items-center">
+                                            <Input
+                                                type="date"
+                                                value={selectedDate}
+                                                onChange={(e) => setSelectedDate(e.target.value)}
+                                                className="w-32 sm:w-36 border-2 border-gray-300 rounded-lg"
+                                                placeholder="Select Date"
+                                            />
+                                            {selectedDate && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="icon"
+                                                    onClick={() => setSelectedDate('')}
+                                                    className="h-9 w-9 border-2 border-gray-300"
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
-                                    <Tabs
-                                        defaultValue="0"
-                                        className="grid gap-5 p-4 border rounded-md"
-                                    >
-                                        <TabsList className="w-full p-1">
-                                            <TabsTrigger value="0">Vendor 1</TabsTrigger>
-                                            <TabsTrigger value="1">Vendor 2</TabsTrigger>
-                                            <TabsTrigger value="2">Vendor 3</TabsTrigger>
-                                        </TabsList>
-                                        {fields.map((field, index) => {
-    const watchVendorRateType = threePartyForm.watch(`vendors.${index}.rateType`);
-    const watchVendorWithTax = threePartyForm.watch(`vendors.${index}.withTax`);
-    
-    return (
-        <TabsContent value={`${index}`} key={field.id}>
-            <div className="grid gap-3">
-                {/* Vendor Name - Full Width */}
-                <FormField
-                    control={threePartyForm.control}
-                    name={`vendors.${index}.vendorName`}
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Vendor Name</FormLabel>
-                            <FormControl>
-                                <Input
-                                    placeholder="Enter vendor name"
-                                    {...field}
-                                />
-                            </FormControl>
-                        </FormItem>
-                    )}
-                />
 
-                {/* Rate Type and Rate - Same Line */}
-                <div className="grid grid-cols-2 gap-3">
-                    <FormField
-                        control={threePartyForm.control}
-                        name={`vendors.${index}.rateType`}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Rate Type</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select rate type" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="basic">Basic Rate</SelectItem>
-                                        <SelectItem value="withTax">With Tax</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={threePartyForm.control}
-                        name={`vendors.${index}.rate`}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>
-                                    {watchVendorRateType === 'basic' ? 'Basic Rate' : 'Rate (With Tax)'}
-                                </FormLabel>
-                                <FormControl>
-                                    <Input type="number" {...field} />
-                                </FormControl>
-                            </FormItem>
-                        )}
-                    />
-                </div>
-
-                {/* With Tax and GST % - Same Line (Only when Basic Rate) */}
-                {watchVendorRateType === 'basic' && (
-                    <div className="grid grid-cols-2 gap-3">
-                        <FormField
-                            control={threePartyForm.control}
-                            name={`vendors.${index}.withTax`}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>With Tax?</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select option" />
+                                    {/* UOM Filter */}
+                                    <div className="w-full sm:w-auto">
+                                        <Select value={selectedUOM} onValueChange={setSelectedUOM}>
+                                            <SelectTrigger className="w-32 sm:w-36 border-2 border-gray-300 rounded-lg">
+                                                <SelectValue placeholder="UOM" />
                                             </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="yes">Yes</SelectItem>
-                                            <SelectItem value="no">No</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </FormItem>
-                            )}
-                        />
-
-                        {watchVendorWithTax === 'no' && (
-                            <FormField
-                                control={threePartyForm.control}
-                                name={`vendors.${index}.gstPercent`}
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>GST %</FormLabel>
-                                        <Select 
-                                            onValueChange={(value) => field.onChange(Number(value))} 
-                                            value={field.value?.toString()}
-                                        >
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select GST %" />
-                                                </SelectTrigger>
-                                            </FormControl>
                                             <SelectContent>
-                                                <SelectItem value="5">5%</SelectItem>
-                                                {/* <SelectItem value="12">12%</SelectItem> */}
-                                                <SelectItem value="18">18%</SelectItem>
-                                                <SelectItem value="40">40%</SelectItem>
+                                                <SelectItem value="__all__">All UOMs</SelectItem>
+                                                {uniqueUOMs.map((uom) => (
+                                                    <SelectItem key={uom} value={uom}>
+                                                        {uom}
+                                                    </SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
-                                    </FormItem>
-                                )}
-                            />
-                        )}
-                    </div>
-                )}
+                                    </div>
 
-                {/* Payment Term, WhatsApp, Email - Keep as is */}
-                <FormField
-                    control={threePartyForm.control}
-                    name={`vendors.${index}.paymentTerm`}
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Payment Term</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select payment term" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {options?.paymentTerms?.map((term, i) => (
-                                        <SelectItem key={i} value={term}>
-                                            {term}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </FormItem>
-                    )}
-                />
+                                    {/* Search */}
+                                    <div className="w-full sm:flex-1 max-w-md">
+                                        <div className="relative">
+                                            <Input
+                                                placeholder="Search..."
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                className="pr-9 border-2 border-gray-300 rounded-lg"
+                                            />
+                                            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                                        </div>
+                                    </div>
 
-                <FormField
-                    control={threePartyForm.control}
-                    name={`vendors.${index}.whatsappNumber`}
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>WhatsApp Number</FormLabel>
-                            <FormControl>
-                                <Input
-                                    type="number"
-                                    placeholder="Enter WhatsApp number"
-                                    {...field}
-                                />
-                            </FormControl>
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={threePartyForm.control}
-                    name={`vendors.${index}.emailId`}
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Email ID</FormLabel>
-                            <FormControl>
-                                <Input
-                                    type="email"
-                                    placeholder="Enter email ID"
-                                    {...field}
-                                />
-                            </FormControl>
-                        </FormItem>
-                    )}
-                />
-            </div>
-        </TabsContent>
-    );
-})}
-
-                                    </Tabs>
-                                    <FormField
-                                        control={threePartyForm.control}
-                                        name="comparisonSheet"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Comparison Sheet</FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        type="file"
-                                                        onChange={(e) =>
-                                                            field.onChange(e.target.files?.[0])
-                                                        }
-                                                    />
-                                                </FormControl>
-                                            </FormItem>
-                                        )}
-                                    />
-                                    {/* <FormField
-                                        control={threePartyForm.control}
-                                        name="productCode"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Product Code</FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        placeholder="Enter product code"
-                                                        {...field}
-                                                    />
-                                                </FormControl>
-                                            </FormItem>
-                                        )}
-                                    /> */}
-
-                                    <DialogFooter>
-                                        <DialogClose asChild>
-                                            <Button variant="outline">Close</Button>
-                                        </DialogClose>
-
+                                    {/* Clear All Button */}
+                                    {(selectedDate || selectedUOM || searchQuery) && (
                                         <Button
-                                            type="submit"
-                                            disabled={threePartyForm.formState.isSubmitting}
+                                            variant="outline"
+                                            onClick={clearAllFilters}
+                                            className="w-full sm:w-auto flex items-center gap-2 border-2 border-gray-300 rounded-lg"
                                         >
-                                            {threePartyForm.formState.isSubmitting && (
-                                                <Loader
-                                                    size={20}
-                                                    color="white"
-                                                    aria-label="Loading Spinner"
-                                                />
-                                            )}
-                                            Update
+                                            <Filter className="h-3 w-3" />
+                                            Clear
                                         </Button>
-                                    </DialogFooter>
-                                </form>
-                            </Form>
-                        </DialogContent>
-                    ) : (
-                        <DialogContent>
+                                    )}
+                                </div>
+
+                                <DataTable
+                                    data={filteredTableData}
+                                    columns={columns}
+                                    searchFields={[]}
+                                    dataLoading={indentLoading}
+                                />
+                            </TabsContent>
+
+                            <TabsContent value="history" className="mt-0">
+                                {/* Enhanced Filter Section for History */}
+                                <div className="flex flex-col sm:flex-row gap-3 mb-6 items-center justify-center p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border-2 border-gray-200">
+                                    {/* Date Filter */}
+                                    <div className="w-full sm:w-auto">
+                                        <div className="flex gap-2 items-center">
+                                            <Input
+                                                type="date"
+                                                value={selectedHistoryDate}
+                                                onChange={(e) => setSelectedHistoryDate(e.target.value)}
+                                                className="w-32 sm:w-36 border-2 border-gray-300 rounded-lg"
+                                                placeholder="Select Date"
+                                            />
+                                            {selectedHistoryDate && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="icon"
+                                                    onClick={() => setSelectedHistoryDate('')}
+                                                    className="h-9 w-9 border-2 border-gray-300"
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* UOM Filter */}
+                                    <div className="w-full sm:w-auto">
+                                        <Select value={selectedHistoryUOM} onValueChange={setSelectedHistoryUOM}>
+                                            <SelectTrigger className="w-32 sm:w-36 border-2 border-gray-300 rounded-lg">
+                                                <SelectValue placeholder="UOM" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="__all__">All UOMs</SelectItem>
+                                                {uniqueHistoryUOMs.map((uom) => (
+                                                    <SelectItem key={uom} value={uom}>
+                                                        {uom}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Search */}
+                                    <div className="w-full sm:flex-1 max-w-md">
+                                        <div className="relative">
+                                            <Input
+                                                placeholder="Search..."
+                                                value={historySearchQuery}
+                                                onChange={(e) => setHistorySearchQuery(e.target.value)}
+                                                className="pr-9 border-2 border-gray-300 rounded-lg"
+                                            />
+                                            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                                        </div>
+                                    </div>
+
+                                    {/* Clear All Button */}
+                                    {(selectedHistoryDate || selectedHistoryUOM || historySearchQuery) && (
+                                        <Button
+                                            variant="outline"
+                                            onClick={clearAllHistoryFilters}
+                                            className="w-full sm:w-auto flex items-center gap-2 border-2 border-gray-300 rounded-lg"
+                                        >
+                                            <Filter className="h-3 w-3" />
+                                            Clear
+                                        </Button>
+                                    )}
+                                </div>
+
+                                <DataTable
+                                    data={filteredHistoryData}
+                                    columns={historyColumns}
+                                    searchFields={[]}
+                                    dataLoading={indentLoading}
+                                />
+                            </TabsContent>
+                        </div>
+                    </Tabs>
+
+                    {/* Regular Vendor Dialog */}
+                    {selectedIndent && selectedIndent.vendorType === 'Regular' && (
+                        <DialogContent className="bg-white rounded-2xl border-2 border-gray-200 shadow-2xl max-w-2xl">
                             <Form {...regularForm}>
                                 <form
                                     onSubmit={regularForm.handleSubmit(onSubmitRegular, onError)}
-                                    className="space-y-5"
+                                    className="space-y-6 p-6"
                                 >
-                                    <DialogHeader className="space-y-1">
-                                        <DialogTitle>Regular Vendor</DialogTitle>
-                                        <DialogDescription>
+                                    <DialogHeader className="text-center">
+                                        <DialogTitle className="text-2xl font-bold text-gray-800">
+                                            Regular Vendor
+                                        </DialogTitle>
+                                        <DialogDescription className="text-lg text-gray-600">
                                             Update vendor for{' '}
-                                            <span className="font-medium">
+                                            <span className="font-bold text-blue-600">
                                                 {selectedIndent.indentNo}
                                             </span>
                                         </DialogDescription>
                                     </DialogHeader>
-                                    <div className="grid grid-cols-3 bg-muted p-2 rounded-md ">
+
+                                    <div className="grid grid-cols-2 gap-4 bg-gradient-to-r from-blue-50 to-green-50 py-4 px-6 rounded-xl border-2 border-gray-200">
                                         <div className="space-y-1">
-                                            <p className="font-medium">Indenter</p>
-                                            <p className="text-sm font-light">
-                                                {selectedIndent.indenter}
-                                            </p>
+                                            <p className="font-semibold text-gray-700">Indenter</p>
+                                            <p className="text-sm font-light">{selectedIndent.indenter}</p>
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="font-medium">Department</p>
-                                            <p className="text-sm font-light">
-                                                {selectedIndent.department}
-                                            </p>
+                                            <p className="font-semibold text-gray-700">Department</p>
+                                            <p className="text-sm font-light">{selectedIndent.department}</p>
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="font-medium">Product</p>
-                                            <p className="text-sm font-light">
-                                                {selectedIndent.product}
-                                            </p>
+                                            <p className="font-semibold text-gray-700">Product</p>
+                                            <p className="text-sm font-light">{selectedIndent.product}</p>
                                         </div>
                                         <div className="space-y-1">
-                                        <p className="font-medium">Quantity</p>
-                                         <p className="text-sm font-light">{selectedIndent.quantity} {selectedIndent.uom}</p>
-                                             </div>
+                                            <p className="font-semibold text-gray-700">Quantity</p>
+                                            <p className="text-sm font-light">{selectedIndent.quantity} {selectedIndent.uom}</p>
+                                        </div>
                                     </div>
-                                    <div className="grid gap-3">
-    {/* Vendor Name - Full Width */}
-    <FormField
-        control={regularForm.control}
-        name="vendorName"
-        render={({ field }) => (
-            <FormItem>
-                <FormLabel>Vendor Name</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                        <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select vendor" />
-                        </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        <Input
-                            placeholder="Search vendor..."
-                            className="mb-2"
-                            onChange={(e) => {
-                                const searchValue = e.target.value.toLowerCase();
-                                const items = document.querySelectorAll('[role="option"]');
-                                items.forEach((item) => {
-                                    const text = item.textContent?.toLowerCase() || '';
-                                    (item as HTMLElement).style.display =
-                                        text.includes(searchValue) ? 'flex' : 'none';
-                                });
-                            }}
-                        />
-                        {options?.vendors?.map(({ vendorName }, i) => (
-                            <SelectItem key={i} value={vendorName}>
-                                {vendorName}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </FormItem>
-        )}
-    />
 
-    {/* Rate Type - Full Width (same as vendor name) */}
-    <FormField
-    control={regularForm.control}
-    name="rateType"
-    render={({ field }) => (
-        <FormItem>
-            <FormLabel>Rate Type</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                    <SelectTrigger className="w-full">  {/* ✅ Added w-full */}
-                        <SelectValue placeholder="Select rate type" />
-                    </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                    <SelectItem value="basic">Basic Rate</SelectItem>
-                    <SelectItem value="withTax">With Tax</SelectItem>
-                </SelectContent>
-            </Select>
-        </FormItem>
-    )}
-/>
+                                    <div className="grid gap-4">
+                                        <FormField
+                                            control={regularForm.control}
+                                            name="vendorName"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="font-semibold text-gray-700 text-lg">Vendor Name</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                        <FormControl>
+                                                            <SelectTrigger className="h-12 border-2 border-gray-300 rounded-xl">
+                                                                <SelectValue placeholder="Select vendor" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <Input
+                                                                placeholder="Search vendor..."
+                                                                className="mb-2 border-2 border-gray-300 rounded-lg"
+                                                                onChange={(e) => {
+                                                                    const searchValue = e.target.value.toLowerCase();
+                                                                    const items = document.querySelectorAll('[role="option"]');
+                                                                    items.forEach((item) => {
+                                                                        const text = item.textContent?.toLowerCase() || '';
+                                                                        (item as HTMLElement).style.display =
+                                                                            text.includes(searchValue) ? 'flex' : 'none';
+                                                                    });
+                                                                }}
+                                                            />
+                                                            {options?.vendors?.map(({ vendorName }, i) => (
+                                                                <SelectItem key={i} value={vendorName}>
+                                                                    {vendorName}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </FormItem>
+                                            )}
+                                        />
 
-    {/* Basic Rate - Full Width (same as vendor name) */}
-    <FormField
-        control={regularForm.control}
-        name="rate"
-        render={({ field }) => (
-            <FormItem>
-                <FormLabel>
-                    {watchRateType === 'basic' ? 'Basic Rate' : watchRateType === 'withTax' ? 'Rate (With Tax)' : 'Rate'}
-                </FormLabel>
-                <FormControl>
-                    <Input type="number" className="w-full" {...field} />
-                </FormControl>
-            </FormItem>
-        )}
-    />
+                                        <FormField
+                                            control={regularForm.control}
+                                            name="rateType"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="font-semibold text-gray-700 text-lg">Rate Type</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                        <FormControl>
+                                                            <SelectTrigger className="h-12 border-2 border-gray-300 rounded-xl">
+                                                                <SelectValue placeholder="Select rate type" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="basic">Basic Rate</SelectItem>
+                                                            <SelectItem value="withTax">With Tax</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </FormItem>
+                                            )}
+                                        />
 
-    {/* With Tax and GST % - Full Width when shown */}
-    {watchRateType === 'basic' && (
-        <>
-            <FormField
-                control={regularForm.control}
-                name="withTax"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>With Tax?</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Select option" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                <SelectItem value="yes">Yes</SelectItem>
-                                <SelectItem value="no">No</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </FormItem>
-                )}
-            />
+                                        <FormField
+                                            control={regularForm.control}
+                                            name="rate"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="font-semibold text-gray-700 text-lg">
+                                                        {watchRateType === 'basic' ? 'Basic Rate' : 'Rate (With Tax)'}
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input 
+                                                            type="number" 
+                                                            className="h-12 border-2 border-gray-300 rounded-xl text-lg" 
+                                                            {...field} 
+                                                        />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
 
-            {watchWithTax === 'no' && (
-                <FormField
-                    control={regularForm.control}
-                    name="gstPercent"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>GST %</FormLabel>
-                            <Select 
-                                onValueChange={(value) => field.onChange(Number(value))} 
-                                value={field.value?.toString()}
-                            >
-                                <FormControl>
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select GST %" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="5">5%</SelectItem>
-                                    {/* <SelectItem value="12">12%</SelectItem> */}
-                                    <SelectItem value="18">18%</SelectItem>
-                                    <SelectItem value="40">40%</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </FormItem>
-                    )}
-                />
-            )}
-        </>
-    )}
+                                        {watchRateType === 'basic' && (
+                                            <>
+                                                <FormField
+                                                    control={regularForm.control}
+                                                    name="withTax"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel className="font-semibold text-gray-700 text-lg">With Tax?</FormLabel>
+                                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                                <FormControl>
+                                                                    <SelectTrigger className="h-12 border-2 border-gray-300 rounded-xl">
+                                                                        <SelectValue placeholder="Select option" />
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent>
+                                                                    <SelectItem value="yes">Yes</SelectItem>
+                                                                    <SelectItem value="no">No</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </FormItem>
+                                                    )}
+                                                />
 
-    {/* Payment Term - Full Width */}
-    <FormField
-        control={regularForm.control}
-        name="paymentTerm"
-        render={({ field }) => (
-            <FormItem>
-                <FormLabel>Payment Term</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                        <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select payment term" />
-                        </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        {options?.paymentTerms?.map((term, i) => (
-                            <SelectItem key={i} value={term}>
-                                {term}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </FormItem>
-        )}
-    />
-</div>
+                                                {watchWithTax === 'no' && (
+                                                    <FormField
+                                                        control={regularForm.control}
+                                                        name="gstPercent"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel className="font-semibold text-gray-700 text-lg">GST %</FormLabel>
+                                                                <Select 
+                                                                    onValueChange={(value) => field.onChange(Number(value))} 
+                                                                    value={field.value?.toString()}
+                                                                >
+                                                                    <FormControl>
+                                                                        <SelectTrigger className="h-12 border-2 border-gray-300 rounded-xl">
+                                                                            <SelectValue placeholder="Select GST %" />
+                                                                        </SelectTrigger>
+                                                                    </FormControl>
+                                                                    <SelectContent>
+                                                                        <SelectItem value="5">5%</SelectItem>
+                                                                        <SelectItem value="18">18%</SelectItem>
+                                                                        <SelectItem value="40">40%</SelectItem>
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                )}
+                                            </>
+                                        )}
 
-                                    <DialogFooter>
+                                        <FormField
+                                            control={regularForm.control}
+                                            name="paymentTerm"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="font-semibold text-gray-700 text-lg">Payment Term</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                        <FormControl>
+                                                            <SelectTrigger className="h-12 border-2 border-gray-300 rounded-xl">
+                                                                <SelectValue placeholder="Select payment term" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {options?.paymentTerms?.map((term, i) => (
+                                                                <SelectItem key={i} value={term}>
+                                                                    {term}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+
+                                    <DialogFooter className="flex justify-center gap-4 pt-6">
                                         <DialogClose asChild>
-                                            <Button variant="outline">Close</Button>
+                                            <Button 
+                                                variant="outline" 
+                                                className="border-2 border-gray-300 rounded-xl px-8 py-3 text-lg font-semibold"
+                                            >
+                                                Close
+                                            </Button>
                                         </DialogClose>
 
-                                        <Button
-                                            type="submit"
+                                        <Button 
+                                            type="submit" 
                                             disabled={regularForm.formState.isSubmitting}
+                                            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl px-8 py-3 text-lg font-semibold border-0"
                                         >
                                             {regularForm.formState.isSubmitting && (
                                                 <Loader
                                                     size={20}
                                                     color="white"
                                                     aria-label="Loading Spinner"
+                                                    className="mr-2"
                                                 />
                                             )}
-                                            Update
+                                            Update Vendor
                                         </Button>
                                     </DialogFooter>
                                 </form>
                             </Form>
                         </DialogContent>
-                    ))}
+                    )}
 
-                {selectedHistory && selectedHistory.vendorType === 'Regular' && (
-                    <DialogContent>
-                        <Form {...historyUpdateForm}>
-                            <form
-                                onSubmit={historyUpdateForm.handleSubmit(
-                                    onSubmitHistoryUpdate,
-                                    onError
-                                )}
-                                className="space-y-7"
-                            >
-                                <DialogHeader className="space-y-1">
-                                    <DialogTitle>Update Rate</DialogTitle>
-                                    <DialogDescription>
-                                        Update rate for{' '}
-                                        <span className="font-medium">
-                                            {selectedHistory.indentNo}
-                                        </span>
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="grid gap-3">
+                    {/* Three Party Vendor Dialog */}
+                    {selectedIndent && selectedIndent.vendorType === 'Three Party' && (
+                        <DialogContent className="bg-white rounded-2xl border-2 border-gray-200 shadow-2xl max-w-4xl">
+                            <Form {...threePartyForm}>
+                                <form
+                                    onSubmit={threePartyForm.handleSubmit(onSubmitThreeParty, onError)}
+                                    className="space-y-6 p-6"
+                                >
+                                    <DialogHeader className="text-center">
+                                        <DialogTitle className="text-2xl font-bold text-gray-800">
+                                            Three Party Vendors
+                                        </DialogTitle>
+                                        <DialogDescription className="text-lg text-gray-600">
+                                            Update vendors for{' '}
+                                            <span className="font-bold text-blue-600">
+                                                {selectedIndent.indentNo}
+                                            </span>
+                                        </DialogDescription>
+                                    </DialogHeader>
+
+                                    <div className="grid grid-cols-3 gap-4 bg-gradient-to-r from-purple-50 to-pink-50 py-4 px-6 rounded-xl border-2 border-gray-200">
+                                        <div className="space-y-1">
+                                            <p className="font-semibold text-gray-700">Indenter</p>
+                                            <p className="text-sm font-light">{selectedIndent.indenter}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="font-semibold text-gray-700">Department</p>
+                                            <p className="text-sm font-light">{selectedIndent.department}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="font-semibold text-gray-700">Product</p>
+                                            <p className="text-sm font-light">{selectedIndent.product}</p>
+                                        </div>
+                                    </div>
+
+                                    <Tabs defaultValue="0" className="grid gap-5 p-6 border-2 border-gray-200 rounded-xl">
+                                        <TabsList className="w-full p-1 bg-gray-100 rounded-lg">
+                                            <TabsTrigger value="0" className="rounded-md data-[state=active]:bg-blue-600 data-[state=active]:text-white">Vendor 1</TabsTrigger>
+                                            <TabsTrigger value="1" className="rounded-md data-[state=active]:bg-blue-600 data-[state=active]:text-white">Vendor 2</TabsTrigger>
+                                            <TabsTrigger value="2" className="rounded-md data-[state=active]:bg-blue-600 data-[state=active]:text-white">Vendor 3</TabsTrigger>
+                                        </TabsList>
+                                        
+                                        {fields.map((field, index) => {
+                                            const watchVendorRateType = threePartyForm.watch(`vendors.${index}.rateType`);
+                                            const watchVendorWithTax = threePartyForm.watch(`vendors.${index}.withTax`);
+                                            
+                                            return (
+                                                <TabsContent value={`${index}`} key={field.id} className="space-y-4">
+                                                    <div className="grid gap-4">
+                                                        {/* Vendor Name */}
+                                                        <FormField
+                                                            control={threePartyForm.control}
+                                                            name={`vendors.${index}.vendorName`}
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel className="font-semibold text-gray-700">Vendor Name</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            placeholder="Enter vendor name"
+                                                                            {...field}
+                                                                            className="h-12 border-2 border-gray-300 rounded-xl"
+                                                                        />
+                                                                    </FormControl>
+                                                                </FormItem>
+                                                            )}
+                                                        />
+
+                                                        {/* Rate Type and Rate */}
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <FormField
+                                                                control={threePartyForm.control}
+                                                                name={`vendors.${index}.rateType`}
+                                                                render={({ field }) => (
+                                                                    <FormItem>
+                                                                        <FormLabel className="font-semibold text-gray-700">Rate Type</FormLabel>
+                                                                        <Select onValueChange={field.onChange} value={field.value}>
+                                                                            <FormControl>
+                                                                                <SelectTrigger className="h-12 border-2 border-gray-300 rounded-xl">
+                                                                                    <SelectValue placeholder="Select rate type" />
+                                                                                </SelectTrigger>
+                                                                            </FormControl>
+                                                                            <SelectContent>
+                                                                                <SelectItem value="basic">Basic Rate</SelectItem>
+                                                                                <SelectItem value="withTax">With Tax</SelectItem>
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                    </FormItem>
+                                                                )}
+                                                            />
+
+                                                            <FormField
+                                                                control={threePartyForm.control}
+                                                                name={`vendors.${index}.rate`}
+                                                                render={({ field }) => (
+                                                                    <FormItem>
+                                                                        <FormLabel className="font-semibold text-gray-700">
+                                                                            {watchVendorRateType === 'basic' ? 'Basic Rate' : 'Rate (With Tax)'}
+                                                                        </FormLabel>
+                                                                        <FormControl>
+                                                                            <Input 
+                                                                                type="number" 
+                                                                                {...field} 
+                                                                                className="h-12 border-2 border-gray-300 rounded-xl"
+                                                                            />
+                                                                        </FormControl>
+                                                                    </FormItem>
+                                                                )}
+                                                            />
+                                                        </div>
+
+                                                        {/* With Tax and GST % */}
+                                                        {watchVendorRateType === 'basic' && (
+                                                            <div className="grid grid-cols-2 gap-4">
+                                                                <FormField
+                                                                    control={threePartyForm.control}
+                                                                    name={`vendors.${index}.withTax`}
+                                                                    render={({ field }) => (
+                                                                        <FormItem>
+                                                                            <FormLabel className="font-semibold text-gray-700">With Tax?</FormLabel>
+                                                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                                                <FormControl>
+                                                                                    <SelectTrigger className="h-12 border-2 border-gray-300 rounded-xl">
+                                                                                        <SelectValue placeholder="Select option" />
+                                                                                    </SelectTrigger>
+                                                                                </FormControl>
+                                                                                <SelectContent>
+                                                                                    <SelectItem value="yes">Yes</SelectItem>
+                                                                                    <SelectItem value="no">No</SelectItem>
+                                                                                </SelectContent>
+                                                                            </Select>
+                                                                        </FormItem>
+                                                                    )}
+                                                                />
+
+                                                                {watchVendorWithTax === 'no' && (
+                                                                    <FormField
+                                                                        control={threePartyForm.control}
+                                                                        name={`vendors.${index}.gstPercent`}
+                                                                        render={({ field }) => (
+                                                                            <FormItem>
+                                                                                <FormLabel className="font-semibold text-gray-700">GST %</FormLabel>
+                                                                                <Select 
+                                                                                    onValueChange={(value) => field.onChange(Number(value))} 
+                                                                                    value={field.value?.toString()}
+                                                                                >
+                                                                                    <FormControl>
+                                                                                        <SelectTrigger className="h-12 border-2 border-gray-300 rounded-xl">
+                                                                                            <SelectValue placeholder="Select GST %" />
+                                                                                        </SelectTrigger>
+                                                                                    </FormControl>
+                                                                                    <SelectContent>
+                                                                                        <SelectItem value="5">5%</SelectItem>
+                                                                                        <SelectItem value="18">18%</SelectItem>
+                                                                                        <SelectItem value="40">40%</SelectItem>
+                                                                                    </SelectContent>
+                                                                                </Select>
+                                                                            </FormItem>
+                                                                        )}
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Payment Term */}
+                                                        <FormField
+                                                            control={threePartyForm.control}
+                                                            name={`vendors.${index}.paymentTerm`}
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel className="font-semibold text-gray-700">Payment Term</FormLabel>
+                                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                                        <FormControl>
+                                                                            <SelectTrigger className="h-12 border-2 border-gray-300 rounded-xl">
+                                                                                <SelectValue placeholder="Select payment term" />
+                                                                            </SelectTrigger>
+                                                                        </FormControl>
+                                                                        <SelectContent>
+                                                                            {options?.paymentTerms?.map((term, i) => (
+                                                                                <SelectItem key={i} value={term}>
+                                                                                    {term}
+                                                                                </SelectItem>
+                                                                            ))}
+                                                                        </SelectContent>
+                                                                    </Select>
+                                                                </FormItem>
+                                                            )}
+                                                        />
+
+                                                        {/* WhatsApp Number */}
+                                                        <FormField
+                                                            control={threePartyForm.control}
+                                                            name={`vendors.${index}.whatsappNumber`}
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel className="font-semibold text-gray-700">WhatsApp Number</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            type="number"
+                                                                            placeholder="Enter WhatsApp number"
+                                                                            {...field}
+                                                                            className="h-12 border-2 border-gray-300 rounded-xl"
+                                                                        />
+                                                                    </FormControl>
+                                                                </FormItem>
+                                                            )}
+                                                        />
+
+                                                        {/* Email ID */}
+                                                        <FormField
+                                                            control={threePartyForm.control}
+                                                            name={`vendors.${index}.emailId`}
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel className="font-semibold text-gray-700">Email ID</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            type="email"
+                                                                            placeholder="Enter email ID"
+                                                                            {...field}
+                                                                            className="h-12 border-2 border-gray-300 rounded-xl"
+                                                                        />
+                                                                    </FormControl>
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    </div>
+                                                </TabsContent>
+                                            );
+                                        })}
+                                    </Tabs>
+
+                                    {/* Comparison Sheet */}
                                     <FormField
-                                        control={historyUpdateForm.control}
-                                        name="rate"
+                                        control={threePartyForm.control}
+                                        name="comparisonSheet"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Rate</FormLabel>
+                                                <FormLabel className="font-semibold text-gray-700 text-lg">Comparison Sheet</FormLabel>
                                                 <FormControl>
-                                                    <Input type="number" {...field} />
+                                                    <Input
+                                                        type="file"
+                                                        onChange={(e) => field.onChange(e.target.files?.[0])}
+                                                        className="border-2 border-gray-300 rounded-xl py-3"
+                                                    />
                                                 </FormControl>
                                             </FormItem>
                                         )}
                                     />
-                                </div>
 
-                                <DialogFooter>
-                                    <DialogClose asChild>
-                                        <Button variant="outline">Close</Button>
-                                    </DialogClose>
+                                    <DialogFooter className="flex justify-center gap-4 pt-6">
+                                        <DialogClose asChild>
+                                            <Button 
+                                                variant="outline" 
+                                                className="border-2 border-gray-300 rounded-xl px-8 py-3 text-lg font-semibold"
+                                            >
+                                                Close
+                                            </Button>
+                                        </DialogClose>
 
-                                    <Button
-                                        type="submit"
-                                        disabled={historyUpdateForm.formState.isSubmitting}
-                                    >
-                                        {historyUpdateForm.formState.isSubmitting && (
-                                            <Loader
-                                                size={20}
-                                                color="white"
-                                                aria-label="Loading Spinner"
-                                            />
-                                        )}
-                                        Update
-                                    </Button>
-                                </DialogFooter>
-                            </form>
-                        </Form>
-                    </DialogContent>
-                )}
-            </Dialog>
+                                        <Button
+                                            type="submit"
+                                            disabled={threePartyForm.formState.isSubmitting}
+                                            className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl px-8 py-3 text-lg font-semibold border-0"
+                                        >
+                                            {threePartyForm.formState.isSubmitting && (
+                                                <Loader
+                                                    size={20}
+                                                    color="white"
+                                                    aria-label="Loading Spinner"
+                                                    className="mr-2"
+                                                />
+                                            )}
+                                            Update Vendors
+                                        </Button>
+                                    </DialogFooter>
+                                </form>
+                            </Form>
+                        </DialogContent>
+                    )}
+
+                    {/* History Update Dialog */}
+                    {selectedHistory && selectedHistory.vendorType === 'Regular' && (
+                        <DialogContent className="bg-white rounded-2xl border-2 border-gray-200 shadow-2xl max-w-md">
+                            <Form {...historyUpdateForm}>
+                                <form
+                                    onSubmit={historyUpdateForm.handleSubmit(onSubmitHistoryUpdate, onError)}
+                                    className="space-y-6 p-6"
+                                >
+                                    <DialogHeader className="text-center">
+                                        <DialogTitle className="text-2xl font-bold text-gray-800">
+                                            Update Rate
+                                        </DialogTitle>
+                                        <DialogDescription className="text-lg text-gray-600">
+                                            Update rate for{' '}
+                                            <span className="font-bold text-blue-600">
+                                                {selectedHistory.indentNo}
+                                            </span>
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    
+                                    <div className="grid gap-4">
+                                        <FormField
+                                            control={historyUpdateForm.control}
+                                            name="rate"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="font-semibold text-gray-700 text-lg">Rate</FormLabel>
+                                                    <FormControl>
+                                                        <Input 
+                                                            type="number" 
+                                                            {...field} 
+                                                            className="h-12 border-2 border-gray-300 rounded-xl text-lg text-center"
+                                                        />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+
+                                    <DialogFooter className="flex justify-center gap-4">
+                                        <DialogClose asChild>
+                                            <Button 
+                                                variant="outline" 
+                                                className="border-2 border-gray-300 rounded-xl px-8 py-3 text-lg font-semibold"
+                                            >
+                                                Close
+                                            </Button>
+                                        </DialogClose>
+
+                                        <Button
+                                            type="submit"
+                                            disabled={historyUpdateForm.formState.isSubmitting}
+                                            className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl px-8 py-3 text-lg font-semibold border-0"
+                                        >
+                                            {historyUpdateForm.formState.isSubmitting && (
+                                                <Loader
+                                                    size={20}
+                                                    color="white"
+                                                    aria-label="Loading Spinner"
+                                                    className="mr-2"
+                                                />
+                                            )}
+                                            Update Rate
+                                        </Button>
+                                    </DialogFooter>
+                                </form>
+                            </Form>
+                        </DialogContent>
+                    )}
+                </Dialog>
+            </div>
         </div>
     );
 };

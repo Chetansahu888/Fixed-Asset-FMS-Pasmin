@@ -190,7 +190,9 @@ export type PoMasterSheet = {
     amount: number;
     totalPoAmount: number;
     preparedBy?: string;  // ✅ ADDED: Based on your sheet
-    approvedBy?: string;  // ✅ ADDED: Based on your sheet
+    approvedBy?: string; 
+    Guarantee?:string;	
+    FreightPayment?:string;
     pdf: string;
     quotationNumber: string;
     quotationDate: string;
@@ -219,6 +221,7 @@ export type PoMasterSheet = {
     piAmount?: number;
     piCopy?: string;
     poRateWithoutTax?: number;
+    'Freight Payment'?: string;
 };
 
 export type Vendor = {
@@ -423,7 +426,10 @@ export type StoreInSheet = {
     driverMobileNo: string;
     billImageStatus: string;
     billRemark: string;
+     productAsPerPack?: string; // ✅ ADD THIS LINE
+
     firmNameMatch: string;
+    
 };
 
 export type TallyEntrySheet = {

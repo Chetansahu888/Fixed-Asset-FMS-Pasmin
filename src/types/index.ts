@@ -2,28 +2,32 @@ export type { MasterSheet, IndentSheet, ReceivedSheet, Sheet, allPermissionKeys,
 export { type ProductFormValues,type ProductItemProps, type Options,type  FormValues, formSchema } from "./indentForm";
 export { type RouteAttributes } from "./routes";
 export type PoMasterSheet = {
+    rowIndex?: number;
     timestamp: string;
     partyName: string;
     poNumber: string;
-    quotationNumber: string;
-    quotationDate: string;
-    enquiryNumber: string;
-    enquiryDate: string;
     internalCode: string;
     product: string;
     description: string;
     quantity: number;
     unit: string;
     rate: number;
-    gstPercent: number;
-    discountPercent: number;
+    gst: number;
+    discount: number;
     amount: number;
     totalPoAmount: number;
-    deliveryDate: string;
-    paymentTerms: string;
-    numberOfDays: number;
-    deliveryDays: number;
-    deliveryType: string;
+    pdf: string;
+    preparedBy?: string;
+    approvedBy?: string;
+    quotationNumber: string;
+    quotationDate: string;
+    enquiryNumber: string;
+    enquiryDate: string;
+    deliveryDate?: string;
+    paymentTerms?: string;
+    numberOfDays?: number;
+    discountPercent?: number;
+    gstPercent?: number;
     term1: string;
     term2: string;
     term3: string;
@@ -34,9 +38,19 @@ export type PoMasterSheet = {
     term8: string;
     term9: string;
     term10: string;
-    pdf?: string;
-    preparedBy?: string;
-    approvedBy?: string;
+    deliveryDays: number;
+    deliveryType: string;
+    firmNameMatch: string;
     emailSendStatus?: string;
-    firmNameMatch?: string;
-}
+    
+    // ✅ CORRECT: Match exact Google Sheet column names
+    'Guarantee'?: string;
+    'Freight Payment'?: string;
+    
+    // Optional: PI Approval fields
+    piApprovalTimestamp?: string;
+    piQty?: number;
+    piAmount?: number;
+    piCopy?: string;
+    poRateWithoutTax?: number;
+};

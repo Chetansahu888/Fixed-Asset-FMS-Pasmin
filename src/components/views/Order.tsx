@@ -1,4 +1,4 @@
-import { Package2 } from 'lucide-react';
+import { Package2, FileText, Building, User, UserCheck, IndianRupee } from 'lucide-react';
 import Heading from '../element/Heading';
 import { useSheets } from '@/context/SheetsContext';
 import { useEffect, useState } from 'react';
@@ -92,12 +92,16 @@ export default function POHistory() {
         }
     }, [indentSheet, poMasterSheet, receivedSheet, user?.firmNameMatch]);
 
-    // Creating table columns
+    // Creating table columns with enhanced styling
     const historyColumns: ColumnDef<HistoryData>[] = [
         { 
             accessorKey: 'poNumber', 
             header: 'PO Number',
-            cell: ({ getValue }) => <div>{getValue() as string || '-'}</div>
+            cell: ({ getValue }) => (
+                <div className="text-center font-bold text-blue-700">
+                    {getValue() as string || '-'}
+                </div>
+            )
         },
         {
             accessorKey: 'poCopy',
@@ -105,34 +109,67 @@ export default function POHistory() {
             cell: ({ row }) => {
                 const attachment = row.original.poCopy;
                 return attachment ? (
-                    <a href={attachment} target="_blank" rel="noopener noreferrer">
-                        PDF
-                    </a>
+                    <div className="flex justify-center">
+                        <a 
+                            href={attachment} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 font-semibold underline flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors"
+                        >
+                            <FileText className="h-4 w-4" />
+                            View PDF
+                        </a>
+                    </div>
                 ) : (
-                    <span className="text-gray-400">No PDF</span>
+                    <div className="flex justify-center">
+                        <span className="text-gray-400 bg-gray-100 px-3 py-2 rounded-lg border border-gray-200">
+                            No PDF
+                        </span>
+                    </div>
                 );
             },
         },
         { 
             accessorKey: 'vendorName', 
             header: 'Vendor Name',
-            cell: ({ getValue }) => <div>{getValue() as string || '-'}</div>
+            cell: ({ getValue }) => (
+                <div className="text-center">
+                    <Building className="inline mr-2 h-4 w-4 text-gray-600" />
+                    {getValue() as string || '-'}
+                </div>
+            )
         },
         { 
             accessorKey: 'preparedBy', 
             header: 'Prepared By',
-            cell: ({ getValue }) => <div>{getValue() as string || '-'}</div>
+            cell: ({ getValue }) => (
+                <div className="text-center">
+                    <User className="inline mr-2 h-4 w-4 text-gray-600" />
+                    {getValue() as string || '-'}
+                </div>
+            )
         },
         { 
             accessorKey: 'approvedBy', 
             header: 'Approved By',
-            cell: ({ getValue }) => <div>{getValue() as string || '-'}</div>
+            cell: ({ getValue }) => (
+                <div className="text-center">
+                    <UserCheck className="inline mr-2 h-4 w-4 text-gray-600" />
+                    {getValue() as string || '-'}
+                </div>
+            )
         },
         {
             accessorKey: 'totalAmount',
             header: 'Amount',
             cell: ({ row }) => {
-                return <div>&#8377;{(row.original.totalAmount || 0).toLocaleString('en-IN')}</div>;
+                const amount = row.original.totalAmount || 0;
+                return (
+                    <div className="text-center font-bold text-green-700 flex items-center justify-center gap-1">
+                        <IndianRupee className="h-4 w-4" />
+                        {amount.toLocaleString('en-IN')}
+                    </div>
+                );
             },
         },
         { 
@@ -145,24 +182,37 @@ export default function POHistory() {
                     status === "Received" ? "primary" : 
                     "default";
                 
-                return <Pill variant={variant}>{status}</Pill>;
+                return (
+                    <div className="flex justify-center">
+                        <Pill 
+                            variant={variant} 
+                            className="font-semibold text-sm px-3 py-2"
+                        >
+                            {status}
+                        </Pill>
+                    </div>
+                );
             }
         },
     ];
 
     return (
-        <div>
-            <Heading heading="PO History" subtext="View purchase orders">
-                <Package2 size={50} className="text-primary" />
-            </Heading>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-6">
+            <div className="max-w-7xl mx-auto">
+                <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-100 p-6 mb-6">
+                    <Heading heading="PO History" subtext="View purchase orders and their status">
+                        <Package2 size={50} className="text-blue-600" />
+                    </Heading>
 
-            <DataTable
-                data={historyData}
-                columns={historyColumns}
-                searchFields={['vendorName', 'poNumber', 'preparedBy', 'approvedBy']}
-                dataLoading={poMasterLoading}
-                className='h-[80dvh]'
-            />
+                    <DataTable
+                        data={historyData}
+                        columns={historyColumns}
+                        searchFields={['vendorName', 'poNumber', 'preparedBy', 'approvedBy']}
+                        dataLoading={poMasterLoading}
+                        className='h-[80dvh] rounded-lg border-2 border-gray-200'
+                    />
+                </div>
+            </div>
         </div>
     );
 };

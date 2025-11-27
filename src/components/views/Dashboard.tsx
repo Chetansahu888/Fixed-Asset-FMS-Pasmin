@@ -32,13 +32,14 @@ function CustomChartTooltipContent({
     const data = payload[0].payload;
 
     return (
-        <div className="rounded-md border bg-white px-3 py-2 shadow-sm text-sm">
-            <p className="font-medium">{label}</p>
-            <p>Quantity: {data.quantity}</p>
-            <p>Frequency: {data.frequency}</p>
+        <div className="rounded-lg border-2 border-gray-200 bg-white px-4 py-3 shadow-xl text-sm font-medium">
+            <p className="font-bold text-gray-900 mb-2">{label}</p>
+            <p className="text-blue-600">Quantity: {data.quantity}</p>
+            <p className="text-green-600">Frequency: {data.frequency}</p>
         </div>
     );
 }
+
 export default function UsersTable() {
     const { receivedSheet, indentSheet, inventorySheet, inventoryLoading } = useSheets();
     const [chartData, setChartData] = useState<
@@ -107,30 +108,32 @@ export default function UsersTable() {
             color: 'var(--color-primary)',
         },
     } satisfies ChartConfig;
+    
     return (
-        <div>
-            <Heading heading="Dashboard" subtext="View you analytics">
-                <LayoutDashboard size={50} className="text-primary" />
+        <div className="bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen p-6">
+            <Heading heading="Dashboard" subtext="View your analytics and insights">
+                <LayoutDashboard size={50} className="text-blue-600" />
             </Heading>
 
-            <div className="grid gap-3 m-3">
-                <div className="gap-3 grid grid-cols-2 md:grid-cols-4">
+            <div className="grid gap-6 mt-6">
+                {/* Filter Section */}
+                <div className="gap-4 grid grid-cols-2 md:grid-cols-4">
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button
                                 variant="outline"
                                 data-empty={!startDate}
-                                className="data-[empty=true]:text-muted-foreground w-full min-w-0 justify-start text-left font-normal"
+                                className="data-[empty=true]:text-gray-500 w-full min-w-0 justify-start text-left font-semibold border-2 border-gray-300 rounded-xl py-6 bg-white hover:bg-blue-50 hover:border-blue-400 transition-colors"
                             >
-                                <CalendarIcon />
+                                <CalendarIcon className="text-blue-600 mr-2" />
                                 {startDate ? (
                                     format(startDate, 'PPP')
                                 ) : (
-                                    <span>Pick a start date</span>
+                                    <span className="text-gray-600">Pick a start date</span>
                                 )}
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
+                        <PopoverContent className="w-auto p-0 border-2 border-gray-200 rounded-xl shadow-xl">
                             <Calendar mode="single" selected={startDate} onSelect={setStartDate} />
                         </PopoverContent>
                     </Popover>
@@ -139,13 +142,13 @@ export default function UsersTable() {
                             <Button
                                 variant="outline"
                                 data-empty={!endDate}
-                                className="data-[empty=true]:text-muted-foreground w-full min-w-0 justify-start text-left font-normal"
+                                className="data-[empty=true]:text-gray-500 w-full min-w-0 justify-start text-left font-semibold border-2 border-gray-300 rounded-xl py-6 bg-white hover:bg-green-50 hover:border-green-400 transition-colors"
                             >
-                                <CalendarIcon />
-                                {endDate ? format(endDate, 'PPP') : <span>Pick a end date</span>}
+                                <CalendarIcon className="text-green-600 mr-2" />
+                                {endDate ? format(endDate, 'PPP') : <span className="text-gray-600">Pick a end date</span>}
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
+                        <PopoverContent className="w-auto p-0 border-2 border-gray-200 rounded-xl shadow-xl">
                             <Calendar mode="single" selected={endDate} onSelect={setEndDate} />
                         </PopoverContent>
                     </Popover>
@@ -155,6 +158,7 @@ export default function UsersTable() {
                         value={filteredVendors}
                         onChange={setFilteredVendors}
                         placeholder="Select Vendors"
+                        // className="border-2 border-gray-300 rounded-xl bg-white"
                     />
                     <ComboBox
                         multiple
@@ -162,73 +166,73 @@ export default function UsersTable() {
                         value={filteredProducts}
                         onChange={setFilteredProducts}
                         placeholder="Select Products"
+                        // className="border-2 border-gray-300 rounded-xl bg-white"
                     />
                 </div>
 
-                <div className="grid md:grid-cols-4 gap-3">
-                    <Card className="bg-gradient-to-br from-transparent to-blue-500/10">
-                        <CardContent>
-                            <div className="text-blue-500 flex justify-between">
-                                <p className="font-semibold">Total Approved Indents</p>
-                                <ClipboardList size={18} />
+                {/* Stats Cards */}
+                <div className="grid md:grid-cols-4 gap-4">
+                    <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl rounded-2xl">
+                        <CardContent className="p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <p className="font-bold text-lg">Total Approved Indents</p>
+                                <ClipboardList size={24} className="text-blue-200" />
                             </div>
-                            <p className="text-3xl font-bold text-blue-800">{indent.count}</p>
-                            <div className="text-blue-500 flex justify-between">
-                                <p className="text-sm ">Indented Quantity</p>
-                                <p>{indent.quantity}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-gradient-to-br from-transparent to-green-500/10">
-                        <CardContent>
-                            <div className="text-green-500 flex justify-between">
-                                <p className="font-semibold">Total Purchases</p>
-                                <Truck size={18} />
-                            </div>
-                            <p className="text-3xl font-bold text-green-800">{purchase.count}</p>
-                            <div className="text-green-500 flex justify-between">
-                                <p className="text-sm ">Purchased Quantity</p>
-                                <p>{purchase.quantity}</p>
+                            <p className="text-4xl font-black mb-2">{indent.count}</p>
+                            <div className="flex justify-between items-center text-blue-100">
+                                <p className="text-sm font-semibold">Indented Quantity</p>
+                                <p className="font-bold">{indent.quantity}</p>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-gradient-to-br from-transparent to-orange-500/10">
-                        <CardContent>
-                            <div className="text-orange-500 flex justify-between">
-                                <p className="font-semibold">Total Issued</p>
-                                <PackageCheck size={18} />
+                    <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0 shadow-xl rounded-2xl">
+                        <CardContent className="p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <p className="font-bold text-lg">Total Purchases</p>
+                                <Truck size={24} className="text-green-200" />
                             </div>
-                            <p className="text-3xl font-bold text-orange-800">{out.count}</p>
-
-                            <div className="text-orange-500 flex justify-between">
-                                <p className="text-sm ">Out Quantity</p>
-                                <p>{out.quantity}</p>
+                            <p className="text-4xl font-black mb-2">{purchase.count}</p>
+                            <div className="flex justify-between items-center text-green-100">
+                                <p className="text-sm font-semibold">Purchased Quantity</p>
+                                <p className="font-bold">{purchase.quantity}</p>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-gradient-to-br from-transparent to-yellow-500/10 text-yellow-500 ">
-                        <CardContent>
-                            <div className="flex justify-between">
-                                <p className="font-semibold">Out of Stock</p>
-                                <Warehouse size={18} />
+                    <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0 shadow-xl rounded-2xl">
+                        <CardContent className="p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <p className="font-bold text-lg">Total Issued</p>
+                                <PackageCheck size={24} className="text-orange-200" />
                             </div>
-                            <p className="text-3xl font-bold text-yellow-800">
-                                {alerts.outOfStock}
-                            </p>
-
-                            <div className="text-yellow-500 flex justify-between">
-                                <p className="text-sm ">Low in Stock</p>
-                                <p>{alerts.lowStock}</p>
+                            <p className="text-4xl font-black mb-2">{out.count}</p>
+                            <div className="flex justify-between items-center text-orange-100">
+                                <p className="text-sm font-semibold">Out Quantity</p>
+                                <p className="font-bold">{out.quantity}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-xl rounded-2xl">
+                        <CardContent className="p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <p className="font-bold text-lg">Stock Alerts</p>
+                                <Warehouse size={24} className="text-purple-200" />
+                            </div>
+                            <p className="text-4xl font-black mb-2">{alerts.outOfStock}</p>
+                            <div className="flex justify-between items-center text-purple-100">
+                                <p className="text-sm font-semibold">Low in Stock</p>
+                                <p className="font-bold">{alerts.lowStock}</p>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
-                <div className="flex gap-3 flex-wrap">
-                    <Card className="w-[55%] md:min-w-150 flex-grow">
-                        <CardHeader>
-                            <CardTitle className="text-xl">Top Purchased Products</CardTitle>
+
+                {/* Charts Section */}
+                <div className="flex gap-4 flex-wrap">
+                    <Card className="w-[55%] md:min-w-150 flex-grow border-2 border-gray-200 shadow-xl rounded-2xl">
+                        <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-t-2xl border-b-2 border-gray-200">
+                            <CardTitle className="text-2xl font-bold text-gray-800">Top Purchased Products</CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="p-6">
                             <ChartContainer className="max-h-80 w-full" config={chartConfig}>
                                 <BarChart
                                     accessibilityLayer
@@ -246,13 +250,11 @@ export default function UsersTable() {
                                             x2="1"
                                             y2="0"
                                         >
-                                            <stop offset="100%" stopColor="#3b82f6" />{' '}
-                                            {/* Tailwind blue-500 */}
-                                            <stop offset="0%" stopColor="#2563eb" />{' '}
-                                            {/* Tailwind blue-600 */}
+                                            <stop offset="0%" stopColor="#3b82f6" /> {/* blue-500 */}
+                                            <stop offset="100%" stopColor="#1d4ed8" /> {/* blue-700 */}
                                         </linearGradient>
                                     </defs>
-                                    <CartesianGrid horizontal={false} />
+                                    <CartesianGrid horizontal={false} stroke="#e5e7eb" />
                                     <YAxis
                                         dataKey="name"
                                         type="category"
@@ -271,20 +273,20 @@ export default function UsersTable() {
                                         dataKey="frequency"
                                         layout="vertical"
                                         fill="url(#barGradient)"
-                                        radius={4}
+                                        radius={8}
                                     >
                                         <LabelList
                                             dataKey="name"
                                             position="insideLeft"
                                             offset={8}
-                                            className="fill-(--color-background) font-semibold"
+                                            className="fill-white font-bold"
                                             fontSize={12}
                                         />
                                         <LabelList
                                             dataKey="frequency"
                                             position="insideRight"
                                             offset={8}
-                                            className="fill-(--color-background) font-semibold"
+                                            className="fill-white font-bold"
                                             fontSize={12}
                                         />
                                     </Bar>
@@ -292,17 +294,21 @@ export default function UsersTable() {
                             </ChartContainer>
                         </CardContent>
                     </Card>
-                    <Card className="flex-grow min-w-60 w-[40%]">
-                        <CardHeader>
-                            <CardTitle className="text-xl">Top Vendors</CardTitle>
+                    <Card className="flex-grow min-w-60 w-[40%] border-2 border-gray-200 shadow-xl rounded-2xl">
+                        <CardHeader className="bg-gradient-to-r from-gray-50 to-green-50 rounded-t-2xl border-b-2 border-gray-200">
+                            <CardTitle className="text-2xl font-bold text-gray-800">Top Vendors</CardTitle>
                         </CardHeader>
-                        <CardContent className="text-base grid gap-2">
+                        <CardContent className="p-6 text-base grid gap-4">
                             {topVendorsData.map((vendor, i) => (
-                                <div className="flex justify-between" key={i}>
-                                    <p className="font-semibold text-md">{vendor.name}</p>
-                                    <div className="flex gap-5">
-                                        <p>{vendor.orders} Orders</p>
-                                        <p>{vendor.quantity} Items</p>
+                                <div className="flex justify-between items-center py-3 px-4 bg-white rounded-xl border-2 border-gray-100 shadow-sm hover:shadow-md transition-shadow" key={i}>
+                                    <p className="font-bold text-gray-800 text-lg">{vendor.name}</p>
+                                    <div className="flex gap-6">
+                                        <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg font-bold text-sm">
+                                            {vendor.orders} Orders
+                                        </span>
+                                        <span className="bg-green-100 text-green-800 px-3 py-1 rounded-lg font-bold text-sm">
+                                            {vendor.quantity} Items
+                                        </span>
                                     </div>
                                 </div>
                             ))}

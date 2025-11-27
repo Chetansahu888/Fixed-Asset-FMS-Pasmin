@@ -97,5 +97,7 @@ export interface PoMasterSheet {
     piQty?: number;                // PI quantity
     piAmount?: number;             // PI amount
     piCopy?: string;               // PI copy URL
-    poRateWithoutTax?: number;     // PO rate without tax
+    poRateWithoutTax?: number;
+    'Guarantee'?: string;
+    'Freight Payment'?: string;     // PO rate without tax
 }
