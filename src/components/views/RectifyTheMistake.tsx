@@ -23,10 +23,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../ui/textarea';
 import { postToSheet } from '@/lib/fetchers';
 import { Calculator } from 'lucide-react';
-import { Tabs, TabsContent } from '../ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { useAuth } from '@/context/AuthContext';
-import Heading from '../element/Heading';
-import { Pill } from '../ui/pill';
+import { Badge } from '../ui/badge';
 
 interface TallyEntryPendingData {
     indentNo: string;
@@ -50,7 +49,6 @@ interface TallyEntryPendingData {
     rate: number;
     indentQty: number;
     totalRate: number;
-
     status1: string;
     remarks1: string;
     firmNameMatch: string;
@@ -80,7 +78,6 @@ interface TallyEntryHistoryData {
     totalRate: number;
     status1: string;
     remarks1: string;
-
     status2: string;
     remarks2: string;
     firmNameMatch: string;
@@ -94,151 +91,97 @@ export default () => {
     const [historyData, setHistoryData] = useState<TallyEntryHistoryData[]>([]);
     const [selectedItem, setSelectedItem] = useState<TallyEntryPendingData | null>(null);
     const [openDialog, setOpenDialog] = useState(false);
-
-    // useEffect(() => {
-    //     setPendingData(
-    //         tallyEntrySheet
-    //             .filter((i) => i.planned2 !== '' && i.actual2 === '')
-    //             .map((i) => ({
-    //                 indentNo: i.indentNo || '',
-    //                 indentDate: i.indentDate || '',
-    //                 purchaseDate: i.purchaseDate || '',
-    //                 materialInDate: i.materialInDate || '',
-    //                 productName: i.productName || '',
-    //                 billNo: i.billNo || '',
-    //                 qty: i.qty || 0,
-    //                 partyName: i.partyName || '',
-    //                 billAmt: i.billAmt || 0,
-    //                 billImage: i.billImage || '',
-    //                 billReceivedLater: i.billReceivedLater || '',
-    //                 notReceivedBillNo: i.notReceivedBillNo || '',
-    //                 location: i.location || '',
-    //                 typeOfBills: i.typeOfBills || '',
-    //                 productImage: i.productImage || '',
-    //                 area: i.area || '',
-    //                 indentedFor: i.indentedFor || '',
-    //                 approvedPartyName: i.approvedPartyName || '',
-    //                 rate: i.rate || 0,
-    //                 indentQty: i.indentQty || 0,
-    //                 totalRate: i.totalRate || 0,
-
-    //                 status1: i.status1 || '',
-    //                 remarks1: i.remarks1 || '',
-    //             }))
-    //     );
-    // }, [tallyEntrySheet]);
-
-    // useEffect(() => {
-    //     setHistoryData(
-    //         tallyEntrySheet
-    //             .filter((i) => i.planned2 !== '' && i.actual2 !== '')
-    //             .map((i) => ({
-    //                 indentNo: i.indentNo || '',
-    //                 indentDate: i.indentDate || '',
-    //                 purchaseDate: i.purchaseDate || '',
-    //                 materialInDate: i.materialInDate || '',
-    //                 productName: i.productName || '',
-    //                 billNo: i.billNo || '',
-    //                 qty: i.qty || 0,
-    //                 partyName: i.partyName || '',
-    //                 billAmt: i.billAmt || 0,
-    //                 billImage: i.billImage || '',
-    //                 billReceivedLater: i.billReceivedLater || '',
-    //                 notReceivedBillNo: i.notReceivedBillNo || '',
-    //                 location: i.location || '',
-    //                 typeOfBills: i.typeOfBills || '',
-    //                 productImage: i.productImage || '',
-    //                 area: i.area || '',
-    //                 indentedFor: i.indentedFor || '',
-    //                 approvedPartyName: i.approvedPartyName || '',
-    //                 rate: i.rate || 0,
-    //                 indentQty: i.indentQty || 0,
-    //                 totalRate: i.totalRate || 0,
-    //                 status1: i.status1 || '',
-    //                 remarks1: i.remarks1 || '',
-    //                 status2: i.status2 || '',
-    //                 remarks2: i.remarks2 || '',
-    //             }))
-    //     );
-    // }, [tallyEntrySheet]);
+    const [activeTab, setActiveTab] = useState('pending');
 
     useEffect(() => {
-    // Pehle firm name se filter karo (case-insensitive)
-    const filteredByFirm = tallyEntrySheet.filter(item => 
-        user.firmNameMatch.toLowerCase() === "all" || item.firmNameMatch === user.firmNameMatch
-    );
-    
-    setPendingData(
-        filteredByFirm
-            .filter((i) => i.planned2 !== '' && i.actual2 === '')
-            .map((i) => ({
-                indentNo: i.indentNo || '',
-                indentDate: i.indentDate || '',
-                purchaseDate: i.purchaseDate || '',
-                materialInDate: i.materialInDate || '',
-                productName: i.productName || '',
-                billNo: i.billNo || '',
-                qty: i.qty || 0,
-                partyName: i.partyName || '',
-                billAmt: i.billAmt || 0,
-                billImage: i.billImage || '',
-                billReceivedLater: i.billReceivedLater || '',
-                notReceivedBillNo: i.notReceivedBillNo || '',
-                location: i.location || '',
-                typeOfBills: i.typeOfBills || '',
-                productImage: i.productImage || '',
-                area: i.area || '',
-                indentedFor: i.indentedFor || '',
-                approvedPartyName: i.approvedPartyName || '',
-                rate: i.rate || 0,
-                indentQty: i.indentQty || 0,
-                totalRate: i.totalRate || 0,
-                status1: i.status1 || '',
-                remarks1: i.remarks1 || '',
-                firmNameMatch: i.firmNameMatch || '', 
-            }))
-    );
-}, [tallyEntrySheet, user.firmNameMatch]);
+        const filteredByFirm = tallyEntrySheet.filter(item => 
+            user.firmNameMatch.toLowerCase() === "all" || item.firmNameMatch === user.firmNameMatch
+        );
+        
+        setPendingData(
+            filteredByFirm
+                .filter((i) => i.planned2 !== '' && i.actual2 === '')
+                .map((i) => ({
+                    indentNo: i.indentNo || '',
+                    indentDate: i.indentDate || '',
+                    purchaseDate: i.purchaseDate || '',
+                    materialInDate: i.materialInDate || '',
+                    productName: i.productName || '',
+                    billNo: i.billNo || '',
+                    qty: i.qty || 0,
+                    partyName: i.partyName || '',
+                    billAmt: i.billAmt || 0,
+                    billImage: i.billImage || '',
+                    billReceivedLater: i.billReceivedLater || '',
+                    notReceivedBillNo: i.notReceivedBillNo || '',
+                    location: i.location || '',
+                    typeOfBills: i.typeOfBills || '',
+                    productImage: i.productImage || '',
+                    area: i.area || '',
+                    indentedFor: i.indentedFor || '',
+                    approvedPartyName: i.approvedPartyName || '',
+                    rate: i.rate || 0,
+                    indentQty: i.indentQty || 0,
+                    totalRate: i.totalRate || 0,
+                    status1: i.status1 || '',
+                    remarks1: i.remarks1 || '',
+                    firmNameMatch: i.firmNameMatch || '', 
+                }))
+        );
+    }, [tallyEntrySheet, user.firmNameMatch]);
 
-useEffect(() => {
-    // Pehle firm name se filter karo (case-insensitive)
-    const filteredByFirm = tallyEntrySheet.filter(item => 
-        user.firmNameMatch.toLowerCase() === "all" || item.firmNameMatch === user.firmNameMatch
-    );
-    
-    setHistoryData(
-        filteredByFirm
-            .filter((i) => i.planned2 !== '' && i.actual2 !== '')
-            .map((i) => ({
-                indentNo: i.indentNo || '',
-                indentDate: i.indentDate || '',
-                purchaseDate: i.purchaseDate || '',
-                materialInDate: i.materialInDate || '',
-                productName: i.productName || '',
-                billNo: i.billNo || '',
-                qty: i.qty || 0,
-                partyName: i.partyName || '',
-                billAmt: i.billAmt || 0,
-                billImage: i.billImage || '',
-                billReceivedLater: i.billReceivedLater || '',
-                notReceivedBillNo: i.notReceivedBillNo || '',
-                location: i.location || '',
-                typeOfBills: i.typeOfBills || '',
-                productImage: i.productImage || '',
-                area: i.area || '',
-                indentedFor: i.indentedFor || '',
-                approvedPartyName: i.approvedPartyName || '',
-                rate: i.rate || 0,
-                indentQty: i.indentQty || 0,
-                totalRate: i.totalRate || 0,
-                status1: i.status1 || '',
-                remarks1: i.remarks1 || '',
-                status2: i.status2 || '',
-                remarks2: i.remarks2 || '',
-                firmNameMatch: i.firmNameMatch || '', 
-            }))
-    );
-}, [tallyEntrySheet, user.firmNameMatch]);
+    useEffect(() => {
+        const filteredByFirm = tallyEntrySheet.filter(item => 
+            user.firmNameMatch.toLowerCase() === "all" || item.firmNameMatch === user.firmNameMatch
+        );
+        
+        setHistoryData(
+            filteredByFirm
+                .filter((i) => i.planned2 !== '' && i.actual2 !== '')
+                .map((i) => ({
+                    indentNo: i.indentNo || '',
+                    indentDate: i.indentDate || '',
+                    purchaseDate: i.purchaseDate || '',
+                    materialInDate: i.materialInDate || '',
+                    productName: i.productName || '',
+                    billNo: i.billNo || '',
+                    qty: i.qty || 0,
+                    partyName: i.partyName || '',
+                    billAmt: i.billAmt || 0,
+                    billImage: i.billImage || '',
+                    billReceivedLater: i.billReceivedLater || '',
+                    notReceivedBillNo: i.notReceivedBillNo || '',
+                    location: i.location || '',
+                    typeOfBills: i.typeOfBills || '',
+                    productImage: i.productImage || '',
+                    area: i.area || '',
+                    indentedFor: i.indentedFor || '',
+                    approvedPartyName: i.approvedPartyName || '',
+                    rate: i.rate || 0,
+                    indentQty: i.indentQty || 0,
+                    totalRate: i.totalRate || 0,
+                    status1: i.status1 || '',
+                    remarks1: i.remarks1 || '',
+                    status2: i.status2 || '',
+                    remarks2: i.remarks2 || '',
+                    firmNameMatch: i.firmNameMatch || '', 
+                }))
+        );
+    }, [tallyEntrySheet, user.firmNameMatch]);
+
+    const formatDate = (dateString: string) => {
+        if (!dateString) return '';
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString;
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        } catch {
+            return dateString;
+        }
+    };
 
     const pendingColumns: ColumnDef<TallyEntryPendingData>[] = [
         ...(user.receiveItemView
@@ -246,146 +189,532 @@ useEffect(() => {
                   {
                       header: 'Action',
                       cell: ({ row }: { row: Row<TallyEntryPendingData> }) => {
-                          const item = row.original;
-
                           return (
-                              <DialogTrigger asChild>
-                                  <Button
-                                      variant="outline"
-                                      onClick={() => {
-                                          setSelectedItem(item);
-                                      }}
-                                  >
-                                      Process
-                                  </Button>
-                              </DialogTrigger>
+                              <div className="flex justify-center">
+                                  <DialogTrigger asChild>
+                                      <Button
+                                          variant="outline"
+                                          onClick={() => {
+                                              setSelectedItem(row.original);
+                                          }}
+                                          className="min-w-[100px]"
+                                      >
+                                          Process
+                                      </Button>
+                                  </DialogTrigger>
+                              </div>
                           );
                       },
                   },
               ]
             : []),
-        { accessorKey: 'indentNo', header: 'Indent No.' },
-        { accessorKey: 'firmNameMatch', header: 'Firm Name' }, 
-        { accessorKey: 'indentDate', header: 'Indent Date' },
-        { accessorKey: 'purchaseDate', header: 'Purchase Date' },
-        { accessorKey: 'materialInDate', header: 'Material In Date' },
-        { accessorKey: 'productName', header: 'Product Name' },
-        { accessorKey: 'billNo', header: 'Bill No.' },
-        { accessorKey: 'qty', header: 'Qty' },
-        { accessorKey: 'partyName', header: 'Party Name' },
-        { accessorKey: 'billAmt', header: 'Bill Amt' },
+        { 
+            accessorKey: 'indentNo', 
+            header: 'Indent No.',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.indentNo}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'firmNameMatch', 
+            header: 'Firm Name',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.firmNameMatch}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'indentDate', 
+            header: 'Indent Date',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {formatDate(row.original.indentDate)}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'purchaseDate', 
+            header: 'Purchase Date',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {formatDate(row.original.purchaseDate)}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'materialInDate', 
+            header: 'Material In Date',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {formatDate(row.original.materialInDate)}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'productName', 
+            header: 'Product Name',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.productName}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'billNo', 
+            header: 'Bill No.',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.billNo}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'qty', 
+            header: 'Qty',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.qty}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'partyName', 
+            header: 'Party Name',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.partyName}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'billAmt', 
+            header: 'Bill Amt',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.billAmt}
+                </div>
+            )
+        },
         {
             accessorKey: 'billImage',
             header: 'Bill Image',
             cell: ({ row }) => {
                 const image = row.original.billImage;
-                return image ? (
-                    <a href={image} target="_blank" rel="noopener noreferrer">
-                        View
-                    </a>
-                ) : (
-                    <></>
+                return (
+                    <div className="text-center">
+                        {image ? (
+                            <a href={image} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                View
+                            </a>
+                        ) : (
+                            <span className="text-gray-400">-</span>
+                        )}
+                    </div>
                 );
             },
         },
-        { accessorKey: 'billReceivedLater', header: 'Bill Received Later' },
-        { accessorKey: 'notReceivedBillNo', header: 'Not Received Bill No.' },
-        { accessorKey: 'location', header: 'Location' },
-        { accessorKey: 'typeOfBills', header: 'Type Of Bills' },
+        { 
+            accessorKey: 'billReceivedLater', 
+            header: 'Bill Received Later',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.billReceivedLater || '-'}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'notReceivedBillNo', 
+            header: 'Not Received Bill No.',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.notReceivedBillNo || '-'}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'location', 
+            header: 'Location',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.location}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'typeOfBills', 
+            header: 'Type Of Bills',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.typeOfBills}
+                </div>
+            )
+        },
         {
             accessorKey: 'productImage',
             header: 'Product Image',
             cell: ({ row }) => {
                 const image = row.original.productImage;
-                return image ? (
-                    <a href={image} target="_blank" rel="noopener noreferrer">
-                        View
-                    </a>
-                ) : (
-                    <></>
+                return (
+                    <div className="text-center">
+                        {image ? (
+                            <a href={image} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                View
+                            </a>
+                        ) : (
+                            <span className="text-gray-400">-</span>
+                        )}
+                    </div>
                 );
             },
         },
-        { accessorKey: 'area', header: 'Area' },
-        { accessorKey: 'indentedFor', header: 'Indented For' },
-        { accessorKey: 'approvedPartyName', header: 'Approved Party Name' },
-        { accessorKey: 'rate', header: 'Rate' },
-        { accessorKey: 'indentQty', header: 'Indent Qty' },
-        { accessorKey: 'totalRate', header: 'Total Rate' },
-        { accessorKey: 'status1', header: 'Status 1' },
-        { accessorKey: 'remarks1', header: 'Remarks 1' },
+        { 
+            accessorKey: 'area', 
+            header: 'Area',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.area}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'indentedFor', 
+            header: 'Indented For',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.indentedFor}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'approvedPartyName', 
+            header: 'Approved Party Name',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.approvedPartyName}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'rate', 
+            header: 'Rate',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.rate}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'indentQty', 
+            header: 'Indent Qty',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.indentQty}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'totalRate', 
+            header: 'Total Rate',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.totalRate}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'status1', 
+            header: 'Status 1',
+            cell: ({ row }) => {
+                const status = row.original.status1;
+                const variant = status === 'Done' ? 'default' : 'destructive';
+                return (
+                    <div className="flex justify-center">
+                        <Badge variant={variant}>
+                            {status || 'Pending'}
+                        </Badge>
+                    </div>
+                );
+            }
+        },
+        { 
+            accessorKey: 'remarks1', 
+            header: 'Remarks 1',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.remarks1 || '-'}
+                </div>
+            )
+        },
     ];
 
     const historyColumns: ColumnDef<TallyEntryHistoryData>[] = [
-        { accessorKey: 'indentNo', header: 'Indent No.' },
-       { accessorKey: 'firmNameMatch', header: 'Firm Name' },  
-        { accessorKey: 'indentDate', header: 'Indent Date' },
-        { accessorKey: 'purchaseDate', header: 'Purchase Date' },
-        { accessorKey: 'materialInDate', header: 'Material In Date' },
-        { accessorKey: 'productName', header: 'Product Name' },
-        { accessorKey: 'billNo', header: 'Bill No.' },
-        { accessorKey: 'qty', header: 'Qty' },
-        { accessorKey: 'partyName', header: 'Party Name' },
-        { accessorKey: 'billAmt', header: 'Bill Amt' },
+        { 
+            accessorKey: 'indentNo', 
+            header: 'Indent No.',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.indentNo}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'firmNameMatch', 
+            header: 'Firm Name',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.firmNameMatch}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'indentDate', 
+            header: 'Indent Date',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {formatDate(row.original.indentDate)}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'purchaseDate', 
+            header: 'Purchase Date',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {formatDate(row.original.purchaseDate)}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'materialInDate', 
+            header: 'Material In Date',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {formatDate(row.original.materialInDate)}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'productName', 
+            header: 'Product Name',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.productName}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'billNo', 
+            header: 'Bill No.',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.billNo}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'qty', 
+            header: 'Qty',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.qty}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'partyName', 
+            header: 'Party Name',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.partyName}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'billAmt', 
+            header: 'Bill Amt',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.billAmt}
+                </div>
+            )
+        },
         {
             accessorKey: 'billImage',
             header: 'Bill Image',
             cell: ({ row }) => {
                 const image = row.original.billImage;
-                return image ? (
-                    <a href={image} target="_blank" rel="noopener noreferrer">
-                        View
-                    </a>
-                ) : (
-                    <></>
+                return (
+                    <div className="text-center">
+                        {image ? (
+                            <a href={image} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                View
+                            </a>
+                        ) : (
+                            <span className="text-gray-400">-</span>
+                        )}
+                    </div>
                 );
             },
         },
-        { accessorKey: 'billReceivedLater', header: 'Bill Received Later' },
-        { accessorKey: 'notReceivedBillNo', header: 'Not Received Bill No.' },
-        { accessorKey: 'location', header: 'Location' },
-        { accessorKey: 'typeOfBills', header: 'Type Of Bills' },
+        { 
+            accessorKey: 'billReceivedLater', 
+            header: 'Bill Received Later',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.billReceivedLater || '-'}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'notReceivedBillNo', 
+            header: 'Not Received Bill No.',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.notReceivedBillNo || '-'}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'location', 
+            header: 'Location',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.location}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'typeOfBills', 
+            header: 'Type Of Bills',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.typeOfBills}
+                </div>
+            )
+        },
         {
             accessorKey: 'productImage',
             header: 'Product Image',
             cell: ({ row }) => {
                 const image = row.original.productImage;
-                return image ? (
-                    <a href={image} target="_blank" rel="noopener noreferrer">
-                        View
-                    </a>
-                ) : (
-                    <></>
+                return (
+                    <div className="text-center">
+                        {image ? (
+                            <a href={image} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                View
+                            </a>
+                        ) : (
+                            <span className="text-gray-400">-</span>
+                        )}
+                    </div>
                 );
             },
         },
-        { accessorKey: 'area', header: 'Area' },
-        { accessorKey: 'indentedFor', header: 'Indented For' },
-        { accessorKey: 'approvedPartyName', header: 'Approved Party Name' },
-        { accessorKey: 'rate', header: 'Rate' },
-        { accessorKey: 'indentQty', header: 'Indent Qty' },
-        { accessorKey: 'totalRate', header: 'Total Rate' },
-        {
-            accessorKey: 'status1',
-            header: 'Status',
+        { 
+            accessorKey: 'area', 
+            header: 'Area',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.area}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'indentedFor', 
+            header: 'Indented For',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.indentedFor}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'approvedPartyName', 
+            header: 'Approved Party Name',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.approvedPartyName}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'rate', 
+            header: 'Rate',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.rate}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'indentQty', 
+            header: 'Indent Qty',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.indentQty}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'totalRate', 
+            header: 'Total Rate',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.totalRate}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'status1', 
+            header: 'Status 1',
             cell: ({ row }) => {
                 const status = row.original.status1;
-                const variant = status === 'Done' ? 'secondary' : 'reject';
-                return <Pill variant={variant}>{status}</Pill>;
-            },
+                const variant = status === 'Done' ? 'default' : 'destructive';
+                return (
+                    <div className="flex justify-center">
+                        <Badge variant={variant}>
+                            {status || '-'}
+                        </Badge>
+                    </div>
+                );
+            }
         },
-        { accessorKey: 'remarks1', header: 'Remarks' },
-
-        {
-            accessorKey: 'status2',
+        { 
+            accessorKey: 'remarks1', 
+            header: 'Remarks 1',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.remarks1 || '-'}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'status2', 
             header: 'Status 2',
             cell: ({ row }) => {
                 const status = row.original.status2;
-                const variant = status === 'Done' ? 'secondary' : 'reject';
-                return <Pill variant={variant}>{status}</Pill>;
-            },
+                const variant = status === 'Done' ? 'default' : 'destructive';
+                return (
+                    <div className="flex justify-center">
+                        <Badge variant={variant}>
+                            {status || '-'}
+                        </Badge>
+                    </div>
+                );
+            }
         },
-        { accessorKey: 'remarks2', header: 'Remarks 2' },
+        { 
+            accessorKey: 'remarks2', 
+            header: 'Remarks 2',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.remarks2 || '-'}
+                </div>
+            )
+        },
     ];
 
     const schema = z.object({
@@ -431,15 +760,14 @@ useEffect(() => {
                 })
                 .replace(',', '');
 
-            // Update the sheet
             await postToSheet(
                 tallyEntrySheet
                     .filter((s) => s.indentNo === selectedItem?.indentNo)
                     .map((prev) => ({
-                        ...prev,
-                        actual2: currentDateTime, // Changed to actual2
-                        status2: values.status2, // Changed to status2
-                        remarks2: values.remarks2, // Changed to remarks2
+                        rowIndex: prev.rowIndex,
+                        actual2: currentDateTime,
+                        status2: values.status2,
+                        remarks2: values.remarks2,
                     })),
                 'update',
                 'TALLY ENTRY'
@@ -459,134 +787,215 @@ useEffect(() => {
     }
 
     return (
-        <div>
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
             <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-                <Tabs defaultValue="pending">
-                    <Heading
-                        heading="Rectify The Mistake"
-                        subtext="Process tally entries and manage status"
-                        tabs
-                    >
-                        <Calculator size={50} className="text-primary" />
-                    </Heading>
+                <div className="p-4 md:p-6">
+                    <div className="max-w-7xl mx-auto">
+                        {/* Header Section */}
+                        <div className="mb-8">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-3 bg-white rounded-xl shadow-sm border">
+                                        <Calculator size={32} className="text-primary" />
+                                    </div>
+                                    <div>
+                                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                                            Rectify The Mistake
+                                        </h1>
+                                        <p className="text-gray-600 mt-1">
+                                            Process tally entries and manage status
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                {/* Stats Cards */}
+                                <div className="flex gap-4">
+                                    <div className="bg-white p-4 rounded-xl shadow-sm border min-w-[140px]">
+                                        <div className="text-sm font-medium text-gray-500">Pending</div>
+                                        <div className="text-2xl font-bold text-amber-600 mt-1">
+                                            {pendingData.length}
+                                        </div>
+                                    </div>
+                                    <div className="bg-white p-4 rounded-xl shadow-sm border min-w-[140px]">
+                                        <div className="text-sm font-medium text-gray-500">Completed</div>
+                                        <div className="text-2xl font-bold text-green-600 mt-1">
+                                            {historyData.length}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                    <TabsContent value="pending">
-                        <DataTable
-                            data={pendingData}
-                            columns={pendingColumns}
-                            searchFields={['indentNo', 'productName', 'partyName', 'billNo']}
-                            dataLoading={false}
-                        />
-                    </TabsContent>
-                    <TabsContent value="history">
-                        <DataTable
-                            data={historyData}
-                            columns={historyColumns}
-                            searchFields={[
-                                'indentNo',
-                                'productName',
-                                'partyName',
-                                'billNo',
-                                'status1',
-                            ]}
-                            dataLoading={false}
-                        />
-                    </TabsContent>
-                </Tabs>
+                            {/* Tabs */}
+                            <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+                                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                                    <div className="border-b px-6">
+                                        <TabsList className="bg-transparent p-0 h-auto">
+                                            <TabsTrigger 
+                                                value="pending" 
+                                                className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none px-6 py-3"
+                                            >
+                                                <span className="flex items-center gap-2">
+                                                    <span>Pending</span>
+                                                    {pendingData.length > 0 && (
+                                                        <Badge variant="secondary" className="ml-2">
+                                                            {pendingData.length}
+                                                        </Badge>
+                                                    )}
+                                                </span>
+                                            </TabsTrigger>
+                                            <TabsTrigger 
+                                                value="history" 
+                                                className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none px-6 py-3"
+                                            >
+                                                <span className="flex items-center gap-2">
+                                                    <span>History</span>
+                                                    {historyData.length > 0 && (
+                                                        <Badge variant="outline" className="ml-2">
+                                                            {historyData.length}
+                                                        </Badge>
+                                                    )}
+                                                </span>
+                                            </TabsTrigger>
+                                        </TabsList>
+                                    </div>
 
+                                    <div className="p-6">
+                                        <TabsContent value="pending" className="mt-0">
+                                            <div className="mb-4">
+                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                                    <div>
+                                                        <h3 className="text-lg font-semibold">
+                                                            Pending Rectifications
+                                                        </h3>
+                                                        <p className="text-gray-600 text-sm">
+                                                            Items scheduled for mistake rectification
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-sm text-gray-500">
+                                                        Showing {pendingData.length} entries
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="border rounded-lg overflow-hidden">
+                                                <DataTable
+                                                    data={pendingData}
+                                                    columns={pendingColumns}
+                                                    searchFields={['indentNo', 'productName', 'partyName', 'billNo']}
+                                                    dataLoading={false}
+                                                />
+                                            </div>
+                                        </TabsContent>
+
+                                        <TabsContent value="history" className="mt-0">
+                                            <div className="mb-4">
+                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                                    <div>
+                                                        <h3 className="text-lg font-semibold">
+                                                            Rectification History
+                                                        </h3>
+                                                        <p className="text-gray-600 text-sm">
+                                                            Items that have been rectified
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-sm text-gray-500">
+                                                        Showing {historyData.length} entries
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="border rounded-lg overflow-hidden">
+                                                <DataTable
+                                                    data={historyData}
+                                                    columns={historyColumns}
+                                                    searchFields={[
+                                                        'indentNo',
+                                                        'productName',
+                                                        'partyName',
+                                                        'billNo',
+                                                        'status1',
+                                                        'status2',
+                                                    ]}
+                                                    dataLoading={false}
+                                                />
+                                            </div>
+                                        </TabsContent>
+                                    </div>
+                                </Tabs>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Dialog for Processing */}
                 {selectedItem && (
                     <DialogContent className="sm:max-w-2xl">
                         <Form {...form}>
                             <form
                                 onSubmit={form.handleSubmit(onSubmit, onError)}
-                                className="space-y-5"
+                                className="space-y-6"
                             >
-                                <DialogHeader className="space-y-1">
-                                    <DialogTitle>Process Tally Entry</DialogTitle>
+                                <DialogHeader className="text-center">
+                                    <DialogTitle className="text-2xl">Rectify Entry</DialogTitle>
                                     <DialogDescription>
-                                        Process entry for indent number{' '}
-                                        <span className="font-medium">{selectedItem.indentNo}</span>
+                                        Process rectification for indent number{' '}
+                                        <span className="font-bold text-primary">{selectedItem.indentNo}</span>
                                     </DialogDescription>
                                 </DialogHeader>
 
-                                <div className="bg-muted p-4 rounded-md grid gap-3">
-                                    <h3 className="text-lg font-bold">Entry Details</h3>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                        <div className="space-y-1">
-                                            <p className="font-medium text-nowrap">Indent No.</p>
-                                            <p className="text-sm font-light">
-                                                {selectedItem.indentNo}
-                                            </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="font-medium text-nowrap">Product Name</p>
-                                            <p className="text-sm font-light">
-                                                {selectedItem.productName}
-                                            </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="font-medium">Party Name</p>
-                                            <p className="text-sm font-light">
-                                                {selectedItem.partyName}
-                                            </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="font-medium">Bill No.</p>
-                                            <p className="text-sm font-light">
-                                                {selectedItem.billNo}
-                                            </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="font-medium">Quantity</p>
-                                            <p className="text-sm font-light">{selectedItem.qty}</p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="font-medium">Bill Amount</p>
-                                            <p className="text-sm font-light">
-                                                {selectedItem.billAmt}
-                                            </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="font-medium">Location</p>
-                                            <p className="text-sm font-light">
-                                                {selectedItem.location}
-                                            </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="font-medium">Area</p>
-                                            <p className="text-sm font-light">
-                                                {selectedItem.area}
-                                            </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="font-medium">Rate</p>
-                                            <p className="text-sm font-light">
-                                                {selectedItem.rate}
-                                            </p>
-                                        </div>
+                                <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-5 rounded-lg border">
+                                    <h3 className="text-lg font-bold mb-4 text-gray-800">Entry Details</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {[
+                                            { label: 'Indent No.', value: selectedItem.indentNo },
+                                            { label: 'Product Name', value: selectedItem.productName },
+                                            { label: 'Party Name', value: selectedItem.partyName },
+                                            { label: 'Bill No.', value: selectedItem.billNo },
+                                            { label: 'Quantity', value: selectedItem.qty },
+                                            { label: 'Bill Amount', value: selectedItem.billAmt },
+                                            { label: 'Location', value: selectedItem.location },
+                                            { label: 'Area', value: selectedItem.area },
+                                            { label: 'Rate', value: selectedItem.rate },
+                                            { label: 'Firm', value: selectedItem.firmNameMatch },
+                                            { label: 'Current Status', value: selectedItem.status1 },
+                                            { label: 'Current Remarks', value: selectedItem.remarks1 },
+                                        ].map((item, index) => (
+                                            <div key={index} className="space-y-1">
+                                                <p className="text-sm font-medium text-gray-500">{item.label}</p>
+                                                <p className="text-base font-semibold text-gray-800">
+                                                    {item.value || 'N/A'}
+                                                </p>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
 
-                                <div className="grid gap-4">
+                                <div className="space-y-5">
                                     <FormField
                                         control={form.control}
                                         name="status2"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Status *</FormLabel>
+                                                <FormLabel className="text-base">Rectification Status *</FormLabel>
                                                 <Select
                                                     onValueChange={field.onChange}
                                                     value={field.value}
                                                 >
                                                     <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Select status" />
+                                                        <SelectTrigger className="h-12">
+                                                            <SelectValue placeholder="Select rectification status" />
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
-                                                        <SelectItem value="Done">Done</SelectItem>
-                                                        <SelectItem value="Not Done">
-                                                            Not Done
+                                                        <SelectItem value="Done" className="py-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                                                <span>Done</span>
+                                                            </div>
+                                                        </SelectItem>
+                                                        <SelectItem value="Not Done" className="py-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                                                <span>Not Done</span>
+                                                            </div>
                                                         </SelectItem>
                                                     </SelectContent>
                                                 </Select>
@@ -599,12 +1008,13 @@ useEffect(() => {
                                         name="remarks2"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Remarks *</FormLabel>
+                                                <FormLabel className="text-base">Rectification Remarks *</FormLabel>
                                                 <FormControl>
                                                     <Textarea
-                                                        placeholder="Enter remarks..."
+                                                        placeholder="Enter rectification remarks here..."
                                                         {...field}
                                                         rows={4}
+                                                        className="resize-none"
                                                     />
                                                 </FormControl>
                                             </FormItem>
@@ -612,20 +1022,26 @@ useEffect(() => {
                                     />
                                 </div>
 
-                                <DialogFooter>
+                                <DialogFooter className="flex flex-col sm:flex-row gap-3">
                                     <DialogClose asChild>
-                                        <Button variant="outline">Close</Button>
+                                        <Button variant="outline" className="w-full sm:w-auto">
+                                            Cancel
+                                        </Button>
                                     </DialogClose>
 
-                                    <Button type="submit" disabled={form.formState.isSubmitting}>
+                                    <Button 
+                                        type="submit" 
+                                        disabled={form.formState.isSubmitting}
+                                        className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary"
+                                    >
                                         {form.formState.isSubmitting && (
                                             <Loader
                                                 size={20}
                                                 color="white"
-                                                aria-label="Loading Spinner"
+                                                className="mr-2"
                                             />
                                         )}
-                                        Update Status
+                                        {form.formState.isSubmitting ? 'Processing...' : 'Update Rectification'}
                                     </Button>
                                 </DialogFooter>
                             </form>

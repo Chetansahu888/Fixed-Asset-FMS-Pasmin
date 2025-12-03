@@ -17,6 +17,7 @@ import StoreOutApproval from './components/views/StoreOutApproval';
 import TrainnigVideo from './components/views/TrainingVideo';
 import Liecense from './components/views/License'
 import MakePayment from './components/views/MakePayment';
+import Exchange from './components/views/Exchange'
 import type { RouteAttributes } from './types';
 import {
     LayoutDashboard,
@@ -277,14 +278,20 @@ const routes: RouteAttributes[] = [
         ).length,
 },
  {
-        path: 'Exchange-Materials',
-        gateKey: 'exchangeMaterials',
-        name: 'PI Approval',
-        icon: <PackageCheck  size={20} />,
-        element: <ExchangeMaterials />,
-        notifications: () => 0,
-    },
-
+    path: 'pi-approval',  // Changed path
+    gateKey: 'exchangeMaterials',
+    name: 'PI Approval',
+    icon: <PackageCheck size={20} />,
+    element: <ExchangeMaterials />,
+    notifications: () => 0,
+},
+{
+    path: 'exchange-materials',  // Kept similar but different
+    name: 'Exchange Materials',
+    icon: <PackageCheck size={20} />,
+    element: <Exchange/>,
+    notifications: () => 0,
+},
 
 {
     path: 'Payment-Status',

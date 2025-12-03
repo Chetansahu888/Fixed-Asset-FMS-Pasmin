@@ -23,10 +23,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../ui/textarea';
 import { postToSheet } from '@/lib/fetchers';
 import { Calculator } from 'lucide-react';
-import { Tabs, TabsContent } from '../ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { useAuth } from '@/context/AuthContext';
 import Heading from '../element/Heading';
 import { Pill } from '../ui/pill';
+import { Badge } from '../ui/badge';
 
 interface TallyEntryPendingData {
     indentNumber: string;
@@ -51,6 +52,8 @@ interface TallyEntryPendingData {
     indentQty: number;
     totalRate: number;
     firmNameMatch: string; 
+    planned1: string;
+    actual1: string;
 }
 
 interface TallyEntryHistoryData {
@@ -77,7 +80,9 @@ interface TallyEntryHistoryData {
     totalRate: number;
     status1: string;
     remarks1: string;
-    firmNameMatch: string; 
+    firmNameMatch: string;
+    planned1: string;
+    actual1: string;
 }
 
 export default () => {
@@ -88,79 +93,25 @@ export default () => {
     const [historyData, setHistoryData] = useState<TallyEntryHistoryData[]>([]);
     const [selectedItem, setSelectedItem] = useState<TallyEntryPendingData | null>(null);
     const [openDialog, setOpenDialog] = useState(false);
+    const [activeTab, setActiveTab] = useState('pending');
 
-    // useEffect(() => {
-    //     setPendingData(
-    //         tallyEntrySheet
-    //             .filter((i) => i.planned1 !== '' && i.actual1 === '')
-    //             .map((i) => ({
-    //                 indentNumber: i.indentNumber || '',
-    //                 liftNumber: i.liftNumber || '',
-    //                 poNumber: i.poNumber || '',
-    //                 materialInDate: i.materialInDate || '',
-    //                 productName: i.productName || '',
-    //                 billNo: i.billNo || '',
-    //                 qty: i.qty || 0,
-    //                 partyName: i.partyName || '',
-    //                 billAmt: i.billAmt || 0,
-    //                 billImage: i.billImage || '',
-    //                 billReceivedLater: i.billReceivedLater || '',
-    //                 notReceivedBillNo: i.notReceivedBillNo || '',
-    //                 location: i.location || '',
-    //                 typeOfBills: i.typeOfBills || '',
-    //                 productImage: i.productImage || '',
-    //                 area: i.area || '',
-    //                 indentedFor: i.indentedFor || '',
-    //                 approvedPartyName: i.approvedPartyName || '',
-    //                 rate: i.rate || 0,
-    //                 indentQty: i.indentQty || 0,
-    //                 totalRate: i.totalRate || 0,
-    //             }))
-    //     );
-    // }, [tallyEntrySheet]);
-    // console.log("Pending Data:", pendingData);
-
-    // useEffect(() => {
-    //     setHistoryData(
-    //         tallyEntrySheet
-    //             .filter((i) => i.planned1 !== '' && i.actual1 !== '')
-    //             .map((i) => ({
-    //                 indentNumber: i.indentNumber || '',
-    //                 liftNumber: i.liftNumber || '',
-    //                 poNumber: i.poNumber || '',
-    //                 materialInDate: i.materialInDate || '',
-    //                 productName: i.productName || '',
-    //                 billNo: i.billNo || '',
-    //                 qty: i.qty || 0,
-    //                 partyName: i.partyName || '',
-    //                 billAmt: i.billAmt || 0,
-    //                 billImage: i.billImage || '',
-    //                 billReceivedLater: i.billReceivedLater || '',
-    //                 notReceivedBillNo: i.notReceivedBillNo || '',
-    //                 location: i.location || '',
-    //                 typeOfBills: i.typeOfBills || '',
-    //                 productImage: i.productImage || '',
-    //                 area: i.area || '',
-    //                 indentedFor: i.indentedFor || '',
-    //                 approvedPartyName: i.approvedPartyName || '',
-    //                 rate: i.rate || 0,
-    //                 indentQty: i.indentQty || 0,
-    //                 totalRate: i.totalRate || 0,
-    //                 status1: i.status1 || '',
-    //                 remarks1: i.remarks1 || '',
-    //             }))
-    //     );
-    // }, [tallyEntrySheet]);
+    // FILTERING CONDITIONS EXPLAINED:
+    // 1. First filter by firm name (if user.firmNameMatch is not "all")
+    // 2. For PENDING: Items where planned1 is NOT empty AND actual1 IS empty
+    //    (This means the task is scheduled but not yet completed)
+    // 3. For HISTORY: Items where planned1 is NOT empty AND actual1 is NOT empty
+    //    (This means the task was scheduled and has been completed)
 
     useEffect(() => {
-    // Pehle firm name se filter karo (case-insensitive)
-    const filteredByFirm = tallyEntrySheet.filter(item => 
-        user.firmNameMatch.toLowerCase() === "all" || item.firmNameMatch === user.firmNameMatch
-    );
-    
-    setPendingData(
-        filteredByFirm
-            .filter((i) => i.planned1 !== '' && i.actual1 === '')
+        const filteredByFirm = tallyEntrySheet.filter(item => 
+            user.firmNameMatch.toLowerCase() === "all" || 
+            item.firmNameMatch?.toLowerCase() === user.firmNameMatch?.toLowerCase()
+        );
+        
+        // Pending items: Planned but not yet executed
+        const pendingItems = filteredByFirm
+            .filter((i) => i.planned1 && i.planned1.trim() !== '' && 
+                    (!i.actual1 || i.actual1.trim() === ''))
             .map((i) => ({
                 indentNumber: i.indentNumber || '',
                 liftNumber: i.liftNumber || '',
@@ -184,19 +135,24 @@ export default () => {
                 indentQty: i.indentQty || 0,
                 totalRate: i.totalRate || 0,
                 firmNameMatch: i.firmNameMatch || '',
-            }))
-    );
-}, [tallyEntrySheet, user.firmNameMatch]);
+                planned1: i.planned1 || '',
+                actual1: i.actual1 || '',
+            }));
+        
+        setPendingData(pendingItems);
+        console.log(`Pending items found: ${pendingItems.length}`, pendingItems);
+    }, [tallyEntrySheet, user.firmNameMatch]);
 
-useEffect(() => {
-    // Pehle firm name se filter karo (case-insensitive)
-    const filteredByFirm = tallyEntrySheet.filter(item => 
-        user.firmNameMatch.toLowerCase() === "all" || item.firmNameMatch === user.firmNameMatch
-    );
-    
-    setHistoryData(
-        filteredByFirm
-            .filter((i) => i.planned1 !== '' && i.actual1 !== '')
+    useEffect(() => {
+        const filteredByFirm = tallyEntrySheet.filter(item => 
+            user.firmNameMatch.toLowerCase() === "all" || 
+            item.firmNameMatch?.toLowerCase() === user.firmNameMatch?.toLowerCase()
+        );
+        
+        // History items: Planned and already executed
+        const historyItems = filteredByFirm
+            .filter((i) => i.planned1 && i.planned1.trim() !== '' && 
+                    i.actual1 && i.actual1.trim() !== '')
             .map((i) => ({
                 indentNumber: i.indentNumber || '',
                 liftNumber: i.liftNumber || '',
@@ -222,17 +178,26 @@ useEffect(() => {
                 status1: i.status1 || '',
                 remarks1: i.remarks1 || '',
                 firmNameMatch: i.firmNameMatch || '',
-            }))
-    );
-}, [tallyEntrySheet, user.firmNameMatch]);
+                planned1: i.planned1 || '',
+                actual1: i.actual1 || '',
+            }));
+        
+        setHistoryData(historyItems);
+        console.log(`History items found: ${historyItems.length}`, historyItems);
+    }, [tallyEntrySheet, user.firmNameMatch]);
 
     const formatDate = (dateString: string) => {
         if (!dateString) return '';
-        const date = new Date(dateString);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}/${month}/${year}`;
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString;
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        } catch {
+            return dateString;
+        }
     };
 
     const pendingColumns: ColumnDef<TallyEntryPendingData>[] = [
@@ -259,141 +224,186 @@ useEffect(() => {
                 },
             ]
             : []),
-        { accessorKey: 'indentNumber', header: 'Indent No.' },
-        { accessorKey: 'firmNameMatch', header: 'Firm Name' },
+        { 
+            accessorKey: 'indentNumber', 
+            header: 'Indent No.',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.indentNumber}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'firmNameMatch', 
+            header: 'Firm Name',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.firmNameMatch}
+                </div>
+            )
+        },
         {
             accessorKey: 'liftNumber',
             header: 'Lift Number',
-            cell: ({ row }) => row.original.liftNumber || ''
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.liftNumber || ''}
+                </div>
+            )
         },
-
         {
             accessorKey: 'poNumber',
-            header: 'Po Number',
-            cell: ({ row }) => row.original.poNumber || ''
+            header: 'PO Number',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.poNumber || ''}
+                </div>
+            )
         },
-
         {
             accessorKey: 'materialInDate',
             header: 'Material In Date',
-            cell: ({ row }) => formatDate(row.original.materialInDate)
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {formatDate(row.original.materialInDate)}
+                </div>
+            )
         },
-        { accessorKey: 'productName', header: 'Product Name' },
-        { accessorKey: 'billNo', header: 'Bill No.' },
-        { accessorKey: 'qty', header: 'Qty' },
-        { accessorKey: 'partyName', header: 'Party Name' },
-        { accessorKey: 'billAmt', header: 'Bill Amt' },
-        {
-            accessorKey: 'billImage',
-            header: 'Bill Image',
-            cell: ({ row }) => {
-                const image = row.original.billImage;
-                return image ? (
-                    <a href={image} target="_blank" rel="noopener noreferrer">
-                        View
-                    </a>
-                ) : (
-                    <></>
-                );
-            },
+        { 
+            accessorKey: 'productName', 
+            header: 'Product Name',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.productName}
+                </div>
+            )
         },
-        { accessorKey: 'billReceivedLater', header: 'Bill Received Later' },
-        { accessorKey: 'notReceivedBillNo', header: 'Not Received Bill No.' },
-        { accessorKey: 'location', header: 'Location' },
-        { accessorKey: 'typeOfBills', header: 'Type Of Bills' },
-        {
-            accessorKey: 'productImage',
-            header: 'Product Image',
-            cell: ({ row }) => {
-                const image = row.original.productImage;
-                return image ? (
-                    <a href={image} target="_blank" rel="noopener noreferrer">
-                        View
-                    </a>
-                ) : (
-                    <></>
-                );
-            },
+        { 
+            accessorKey: 'billNo', 
+            header: 'Bill No.',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.billNo}
+                </div>
+            )
         },
-        { accessorKey: 'area', header: 'Area' },
-        { accessorKey: 'indentedFor', header: 'Indented For' },
-        { accessorKey: 'approvedPartyName', header: 'Approved Party Name' },
-        { accessorKey: 'rate', header: 'Rate' },
-        { accessorKey: 'indentQty', header: 'Indent Qty' },
-        { accessorKey: 'totalRate', header: 'Total Rate' },
+        { 
+            accessorKey: 'qty', 
+            header: 'Qty',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.qty}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'billAmt', 
+            header: 'Bill Amt',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.billAmt}
+                </div>
+            )
+        },
     ];
 
     const historyColumns: ColumnDef<TallyEntryHistoryData>[] = [
-        { accessorKey: 'indentNumber', header: 'Indent No.' },
-        {
-            accessorKey: 'liftNumber',
-            header: 'Lift Number',
-            cell: ({ row }) => formatDate(row.original.liftNumber)
+        { 
+            accessorKey: 'indentNumber', 
+            header: 'Indent No.',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.indentNumber}
+                </div>
+            )
         },
-        { accessorKey: 'firmNameMatch', header: 'Firm Name' },
+        { 
+            accessorKey: 'firmNameMatch', 
+            header: 'Firm Name',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.firmNameMatch}
+                </div>
+            )
+        },
         {
             accessorKey: 'poNumber',
-            header: 'Po Number',
-            cell: ({ row }) => formatDate(row.original.poNumber)
+            header: 'PO Number',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.poNumber || ''}
+                </div>
+            )
         },
         {
             accessorKey: 'materialInDate',
             header: 'Material In Date',
-            cell: ({ row }) => formatDate(row.original.materialInDate)
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {formatDate(row.original.materialInDate)}
+                </div>
+            )
         },
-        { accessorKey: 'productName', header: 'Product Name' },
-        { accessorKey: 'billNo', header: 'Bill No.' },
-        { accessorKey: 'qty', header: 'Qty' },
-        { accessorKey: 'partyName', header: 'Party Name' },
-        { accessorKey: 'billAmt', header: 'Bill Amt' },
-        {
-            accessorKey: 'billImage',
-            header: 'Bill Image',
-            cell: ({ row }) => {
-                const image = row.original.billImage;
-                return image ? (
-                    <a href={image} target="_blank" rel="noopener noreferrer">
-                        View
-                    </a>
-                ) : (
-                    <></>
-                );
-            },
+        { 
+            accessorKey: 'productName', 
+            header: 'Product Name',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.productName}
+                </div>
+            )
         },
-        { accessorKey: 'billReceivedLater', header: 'Bill Received Later' },
-        { accessorKey: 'notReceivedBillNo', header: 'Not Received Bill No.' },
-        { accessorKey: 'location', header: 'Location' },
-        { accessorKey: 'typeOfBills', header: 'Type Of Bills' },
-        {
-            accessorKey: 'productImage',
-            header: 'Product Image',
-            cell: ({ row }) => {
-                const image = row.original.productImage;
-                return image ? (
-                    <a href={image} target="_blank" rel="noopener noreferrer">
-                        View
-                    </a>
-                ) : (
-                    <></>
-                );
-            },
+        { 
+            accessorKey: 'billNo', 
+            header: 'Bill No.',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.billNo}
+                </div>
+            )
         },
-        { accessorKey: 'area', header: 'Area' },
-        { accessorKey: 'indentedFor', header: 'Indented For' },
-        { accessorKey: 'approvedPartyName', header: 'Approved Party Name' },
-        { accessorKey: 'rate', header: 'Rate' },
-        { accessorKey: 'indentQty', header: 'Indent Qty' },
-        { accessorKey: 'totalRate', header: 'Total Rate' },
+        { 
+            accessorKey: 'partyName', 
+            header: 'Party Name',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.partyName}
+                </div>
+            )
+        },
+        { 
+            accessorKey: 'billAmt', 
+            header: 'Bill Amt',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.billAmt}
+                </div>
+            )
+        },
         {
             accessorKey: 'status1',
             header: 'Status',
             cell: ({ row }) => {
                 const status = row.original.status1;
-                const variant = status === 'Done' ? 'secondary' : 'reject';
-                return <Pill variant={variant}>{status}</Pill>;
+                const variant = status === 'Done' ? 'secondary' : 'destructive';
+                return (
+                    <div className="flex justify-center">
+                        <Badge variant={variant}>
+                            {status}
+                        </Badge>
+                    </div>
+                );
             },
         },
-        { accessorKey: 'remarks1', header: 'Remarks' },
+        { 
+            accessorKey: 'remarks1', 
+            header: 'Remarks',
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {row.original.remarks1}
+                </div>
+            )
+        },
     ];
 
     const schema = z.object({
@@ -439,15 +449,14 @@ useEffect(() => {
                 })
                 .replace(',', '');
 
-            // Update the sheet
             await postToSheet(
                 tallyEntrySheet
                     .filter((s) => s.indentNumber === selectedItem?.indentNumber)
                     .map((prev) => ({
-                        rowIndex: prev.rowIndex,  // ✅ Only rowIndex to identify the row
-                        actual1: currentDateTime,  // ✅ New timestamp
-                        status1: values.status1,   // ✅ Form field
-                        remarks1: values.remarks1, // ✅ Form field
+                        rowIndex: prev.rowIndex,
+                        actual1: currentDateTime,
+                        status1: values.status1,
+                        remarks1: values.remarks1,
                     })),
                 'update',
                 'TALLY ENTRY'
@@ -456,10 +465,6 @@ useEffect(() => {
             toast.success(`Updated status for ${selectedItem?.indentNumber}`);
             setOpenDialog(false);
             setTimeout(() => updateAll(), 1000);
-            console.log("Form values:", values);
-            console.log("Current DateTime:", currentDateTime);
-            console.log("Selected Item:", selectedItem);
-            console.log("Filtered Rows:", tallyEntrySheet.filter(s => s.indentNumber === selectedItem?.indentNumber));
 
         } catch {
             toast.error('Failed to update status');
@@ -472,134 +477,210 @@ useEffect(() => {
     }
 
     return (
-        <div>
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
             <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-                <Tabs defaultValue="pending">
-                    <Heading
-                        heading="Audit Data"
-                        subtext="Process tally entries and manage status"
-                        tabs
-                    >
-                        <Calculator size={50} className="text-primary" />
-                    </Heading>
+                <div className="p-4 md:p-6">
+                    <div className="max-w-7xl mx-auto">
+                        {/* Header Section */}
+                        <div className="mb-8">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-3 bg-white rounded-xl shadow-sm border">
+                                        <Calculator size={32} className="text-primary" />
+                                    </div>
+                                    <div>
+                                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                                            Audit Data
+                                        </h1>
+                                        <p className="text-gray-600 mt-1">
+                                            Process tally entries and manage status
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                {/* Stats Cards */}
+                                <div className="flex gap-4">
+                                    <div className="bg-white p-4 rounded-xl shadow-sm border min-w-[140px]">
+                                        <div className="text-sm font-medium text-gray-500">Pending</div>
+                                        <div className="text-2xl font-bold text-amber-600 mt-1">
+                                            {pendingData.length}
+                                        </div>
+                                    </div>
+                                    <div className="bg-white p-4 rounded-xl shadow-sm border min-w-[140px]">
+                                        <div className="text-sm font-medium text-gray-500">Completed</div>
+                                        <div className="text-2xl font-bold text-green-600 mt-1">
+                                            {historyData.length}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                    <TabsContent value="pending">
-                        <DataTable
-                            data={pendingData}
-                            columns={pendingColumns}
-                            searchFields={['indentNumber', 'productName', 'partyName', 'billNo']}
-                            dataLoading={false}
-                        />
-                    </TabsContent>
-                    <TabsContent value="history">
-                        <DataTable
-                            data={historyData}
-                            columns={historyColumns}
-                            searchFields={[
-                                'indentNumber',
-                                'productName',
-                                'partyName',
-                                'billNo',
-                                'status1',
-                            ]}
-                            dataLoading={false}
-                        />
-                    </TabsContent>
-                </Tabs>
+                            {/* Tabs */}
+                            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                                <div className="border-b">
+                                    <TabsList className="bg-transparent p-0 h-auto">
+                                        <TabsTrigger 
+                                            value="pending" 
+                                            className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none px-6 py-3"
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                <span>Pending</span>
+                                                {pendingData.length > 0 && (
+                                                    <Badge variant="secondary" className="ml-2">
+                                                        {pendingData.length}
+                                                    </Badge>
+                                                )}
+                                            </span>
+                                        </TabsTrigger>
+                                        <TabsTrigger 
+                                            value="history" 
+                                            className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none px-6 py-3"
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                <span>History</span>
+                                                {historyData.length > 0 && (
+                                                    <Badge variant="outline" className="ml-2">
+                                                        {historyData.length}
+                                                    </Badge>
+                                                )}
+                                            </span>
+                                        </TabsTrigger>
+                                    </TabsList>
+                                </div>
 
+                                <TabsContent value="pending" className="mt-6">
+                                    <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+                                        <div className="p-4 border-b">
+                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                                <div>
+                                                    <h3 className="text-lg font-semibold">
+                                                        Pending Tally Entries
+                                                    </h3>
+                                                    <p className="text-gray-600 text-sm">
+                                                        Items scheduled but not yet processed
+                                                    </p>
+                                                </div>
+                                                <div className="text-sm text-gray-500">
+                                                    Showing {pendingData.length} entries
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <DataTable
+                                            data={pendingData}
+                                            columns={pendingColumns}
+                                            searchFields={['indentNumber', 'productName', 'partyName', 'billNo']}
+                                            dataLoading={false}
+                                            className="border-none"
+                                        />
+                                    </div>
+                                </TabsContent>
+
+                                <TabsContent value="history" className="mt-6">
+                                    <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+                                        <div className="p-4 border-b">
+                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                                <div>
+                                                    <h3 className="text-lg font-semibold">
+                                                        Completed Tally Entries
+                                                    </h3>
+                                                    <p className="text-gray-600 text-sm">
+                                                        Items that have been processed
+                                                    </p>
+                                                </div>
+                                                <div className="text-sm text-gray-500">
+                                                    Showing {historyData.length} entries
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <DataTable
+                                            data={historyData}
+                                            columns={historyColumns}
+                                            searchFields={[
+                                                'indentNumber',
+                                                'productName',
+                                                'partyName',
+                                                'billNo',
+                                                'status1',
+                                            ]}
+                                            dataLoading={false}
+                                            className="border-none"
+                                        />
+                                    </div>
+                                </TabsContent>
+                            </Tabs>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Dialog for Processing */}
                 {selectedItem && (
                     <DialogContent className="sm:max-w-2xl">
                         <Form {...form}>
                             <form
                                 onSubmit={form.handleSubmit(onSubmit, onError)}
-                                className="space-y-5"
+                                className="space-y-6"
                             >
-                                <DialogHeader className="space-y-1">
-                                    <DialogTitle>Process Tally Entry</DialogTitle>
+                                <DialogHeader className="text-center">
+                                    <DialogTitle className="text-2xl">Process Tally Entry</DialogTitle>
                                     <DialogDescription>
                                         Process entry for indent number{' '}
-                                        <span className="font-medium">{selectedItem.indentNumber}</span>
+                                        <span className="font-bold text-primary">{selectedItem.indentNumber}</span>
                                     </DialogDescription>
                                 </DialogHeader>
 
-                                <div className="bg-muted p-4 rounded-md grid gap-3">
-                                    <h3 className="text-lg font-bold">Entry Details</h3>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                        <div className="space-y-1">
-                                            <p className="font-medium text-nowrap">Indent No.</p>
-                                            <p className="text-sm font-light">
-                                                {selectedItem.indentNumber}
-                                            </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="font-medium text-nowrap">Product Name</p>
-                                            <p className="text-sm font-light">
-                                                {selectedItem.productName}
-                                            </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="font-medium">Party Name</p>
-                                            <p className="text-sm font-light">
-                                                {selectedItem.partyName}
-                                            </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="font-medium">Bill No.</p>
-                                            <p className="text-sm font-light">
-                                                {selectedItem.billNo}
-                                            </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="font-medium">Quantity</p>
-                                            <p className="text-sm font-light">{selectedItem.qty}</p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="font-medium">Bill Amount</p>
-                                            <p className="text-sm font-light">
-                                                {selectedItem.billAmt}
-                                            </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="font-medium">Location</p>
-                                            <p className="text-sm font-light">
-                                                {selectedItem.location}
-                                            </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="font-medium">Area</p>
-                                            <p className="text-sm font-light">
-                                                {selectedItem.area}
-                                            </p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="font-medium">Rate</p>
-                                            <p className="text-sm font-light">
-                                                {selectedItem.rate}
-                                            </p>
-                                        </div>
+                                <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-5 rounded-lg border">
+                                    <h3 className="text-lg font-bold mb-4 text-gray-800">Entry Details</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {[
+                                            { label: 'Indent No.', value: selectedItem.indentNumber },
+                                            { label: 'Product Name', value: selectedItem.productName },
+                                            { label: 'Party Name', value: selectedItem.partyName },
+                                            { label: 'Bill No.', value: selectedItem.billNo },
+                                            { label: 'Quantity', value: selectedItem.qty },
+                                            { label: 'Bill Amount', value: selectedItem.billAmt },
+                                            { label: 'Location', value: selectedItem.location },
+                                            { label: 'Area', value: selectedItem.area },
+                                            { label: 'Rate', value: selectedItem.rate },
+                                            { label: 'Firm', value: selectedItem.firmNameMatch },
+                                        ].map((item, index) => (
+                                            <div key={index} className="space-y-1">
+                                                <p className="text-sm font-medium text-gray-500">{item.label}</p>
+                                                <p className="text-base font-semibold text-gray-800">
+                                                    {item.value || 'N/A'}
+                                                </p>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
 
-                                <div className="grid gap-4">
+                                <div className="space-y-5">
                                     <FormField
                                         control={form.control}
                                         name="status1"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Status *</FormLabel>
+                                                <FormLabel className="text-base">Status *</FormLabel>
                                                 <Select
                                                     onValueChange={field.onChange}
                                                     value={field.value}
                                                 >
                                                     <FormControl>
-                                                        <SelectTrigger>
+                                                        <SelectTrigger className="h-12">
                                                             <SelectValue placeholder="Select status" />
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
-                                                        <SelectItem value="Done">Done</SelectItem>
-                                                        <SelectItem value="Not Done">
-                                                            Not Done
+                                                        <SelectItem value="Done" className="py-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                                                <span>Done</span>
+                                                            </div>
+                                                        </SelectItem>
+                                                        <SelectItem value="Not Done" className="py-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                                                <span>Not Done</span>
+                                                            </div>
                                                         </SelectItem>
                                                     </SelectContent>
                                                 </Select>
@@ -612,12 +693,13 @@ useEffect(() => {
                                         name="remarks1"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Remarks *</FormLabel>
+                                                <FormLabel className="text-base">Remarks *</FormLabel>
                                                 <FormControl>
                                                     <Textarea
-                                                        placeholder="Enter remarks..."
+                                                        placeholder="Enter your remarks here..."
                                                         {...field}
                                                         rows={4}
+                                                        className="resize-none"
                                                     />
                                                 </FormControl>
                                             </FormItem>
@@ -625,20 +707,26 @@ useEffect(() => {
                                     />
                                 </div>
 
-                                <DialogFooter>
+                                <DialogFooter className="flex flex-col sm:flex-row gap-3">
                                     <DialogClose asChild>
-                                        <Button variant="outline">Close</Button>
+                                        <Button variant="outline" className="w-full sm:w-auto">
+                                            Cancel
+                                        </Button>
                                     </DialogClose>
 
-                                    <Button type="submit" disabled={form.formState.isSubmitting}>
+                                    <Button 
+                                        type="submit" 
+                                        disabled={form.formState.isSubmitting}
+                                        className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary"
+                                    >
                                         {form.formState.isSubmitting && (
                                             <Loader
                                                 size={20}
                                                 color="white"
-                                                aria-label="Loading Spinner"
+                                                className="mr-2"
                                             />
                                         )}
-                                        Update Status
+                                        {form.formState.isSubmitting ? 'Processing...' : 'Update Status'}
                                     </Button>
                                 </DialogFooter>
                             </form>

@@ -1,4 +1,3 @@
-
 import { useSheets } from '@/context/SheetsContext';
 import type { ColumnDef, Row } from '@tanstack/react-table';
 import { useEffect, useState } from 'react';
@@ -7,7 +6,6 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/context/AuthContext';
-
 import {
     Dialog,
     DialogContent,
@@ -15,7 +13,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
     DialogClose,
 } from '../ui/dialog';
 import { Button } from '../ui/button';
@@ -26,8 +23,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { postToSheet, uploadFile } from '@/lib/fetchers';
-import { Truck } from 'lucide-react';
-import Heading from '../element/Heading';
+import { Truck, Package, Upload, MapPin, Car, Receipt, DollarSign } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Separator } from '../ui/separator';
+import { Badge } from '../ui/badge';
 
 interface FullkittingData {
     indentNumber: string;
@@ -50,55 +49,45 @@ export default function FullKitting() {
     const { masterSheet } = useSheets();
     const { user } = useAuth();
 
-
-    // useEffect(() => {
-    //     console.log("Fullkitting Sheet:", fullkittingSheet);
-    //     setTableData(
-    //         fullkittingSheet
-    //             .filter((item) => item.planned && item.planned !== '' && (!item.actual || item.actual === ''))
-    //             .map((item) => ({
-    //                 indentNumber: item.indentNumber || '',
-    //                 vendorName: item.vendorName || '',
-    //                 productName: item.productName || '',
-    //                 qty: item.qty || 0,
-    //                 billNo: item.billNo || '',
-    //                 transportingInclude: item.transportingInclude || '',
-    //                 transporterName: item.transporterName || '',
-    //                 amount: item.amount || 0,
-    //             }))
-    //     );
-    // }, [fullkittingSheet]);
+    const [stats, setStats] = useState({
+        total: 0,
+        pending: 0,
+        completed: 0
+    });
 
     useEffect(() => {
-        console.log("Fullkitting Sheet:", fullkittingSheet);
-        
-        // Pehle firm name se filter karo (case-insensitive)
         const filteredByFirm = fullkittingSheet.filter(item => 
             user.firmNameMatch.toLowerCase() === "all" || item.firmNameMatch === user.firmNameMatch
         );
-        
+
+        const pendingItems = filteredByFirm.filter(item => item.planned && item.planned !== '' && (!item.actual || item.actual === ''));
+        const completedItems = filteredByFirm.filter(item => item.actual && item.actual !== '');
+
         setTableData(
-            filteredByFirm
-                .filter((item) => item.planned && item.planned !== '' && (!item.actual || item.actual === ''))
-                .map((item) => ({
-                    indentNumber: item.indentNumber || '',
-                    vendorName: item.vendorName || '',
-                    productName: item.productName || '',
-                    qty: item.qty || 0,
-                    billNo: item.billNo || '',
-                    transportingInclude: item.transportingInclude || '',
-                    transporterName: item.transporterName || '',
-                    amount: item.amount || 0,
-                    firmNameMatch: item.firmNameMatch || '',
-                }))
+            pendingItems.map((item) => ({
+                indentNumber: item.indentNumber || '',
+                vendorName: item.vendorName || '',
+                productName: item.productName || '',
+                qty: item.qty || 0,
+                billNo: item.billNo || '',
+                transportingInclude: item.transportingInclude || '',
+                transporterName: item.transporterName || '',
+                amount: item.amount || 0,
+                firmNameMatch: item.firmNameMatch || '',
+            }))
         );
+
+        setStats({
+            total: filteredByFirm.length,
+            pending: pendingItems.length,
+            completed: completedItems.length
+        });
     }, [fullkittingSheet, user.firmNameMatch]);
 
-    // Add after the existing useEffect
-useEffect(() => {
-    console.log("Master Sheet:", masterSheet);
-    console.log("FMS Names:", masterSheet?.fmsNames);
-}, [masterSheet]);
+    useEffect(() => {
+        console.log("Master Sheet:", masterSheet);
+        console.log("FMS Names:", masterSheet?.fmsNames);
+    }, [masterSheet]);
 
     const columns: ColumnDef<FullkittingData>[] = [
         {
@@ -106,28 +95,88 @@ useEffect(() => {
             cell: ({ row }: { row: Row<FullkittingData> }) => {
                 const item = row.original;
                 return (
-                    <DialogTrigger asChild>
-                        <Button
-                            variant="outline"
-                            onClick={() => {
-                                setSelectedItem(item);
-                            }}
-                        >
-                            Update
-                        </Button>
-                    </DialogTrigger>
+                    <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => {
+                            setSelectedItem(item);
+                            setOpenDialog(true);
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+                    >
+                        <Truck className="mr-2 h-3 w-3" />
+                        Update
+                    </Button>
                 );
             },
         },
-        { accessorKey: 'indentNumber', header: 'Indent Number' },
-         { accessorKey: 'firmNameMatch', header: 'Firm Name Match' }, 
-        { accessorKey: 'vendorName', header: 'Vendor Name' },
-        { accessorKey: 'productName', header: 'Product Name' },
-        { accessorKey: 'qty', header: 'Qty' },
-        { accessorKey: 'billNo', header: 'Bill No.' },
-        { accessorKey: 'transportingInclude', header: 'Transporting Include' },
-        { accessorKey: 'transporterName', header: 'Transporter Name' },
-        { accessorKey: 'amount', header: 'Amount' },
+        { 
+            accessorKey: 'indentNumber', 
+            header: 'Indent No.',
+            cell: ({ row }) => (
+                <span className="font-medium text-blue-700">{row.original.indentNumber}</span>
+            )
+        },
+        { 
+            accessorKey: 'firmNameMatch', 
+            header: 'Firm',
+            cell: ({ row }) => (
+                <Badge variant="outline" className="bg-gray-50">
+                    {row.original.firmNameMatch}
+                </Badge>
+            )
+        },
+        { 
+            accessorKey: 'vendorName', 
+            header: 'Vendor',
+            cell: ({ row }) => (
+                <span className="font-medium">{row.original.vendorName}</span>
+            )
+        },
+        { 
+            accessorKey: 'productName', 
+            header: 'Product',
+            cell: ({ row }) => (
+                <span className="font-medium">{row.original.productName}</span>
+            )
+        },
+        { 
+            accessorKey: 'qty', 
+            header: 'Quantity',
+            cell: ({ row }) => (
+                <span className="font-semibold text-gray-800">{row.original.qty}</span>
+            )
+        },
+        { 
+            accessorKey: 'billNo', 
+            header: 'Bill No.',
+            cell: ({ row }) => (
+                <span className="font-medium text-gray-700">{row.original.billNo}</span>
+            )
+        },
+        { 
+            accessorKey: 'transportingInclude', 
+            header: 'Transport',
+            cell: ({ row }) => {
+                const hasTransport = row.original.transportingInclude === 'Yes';
+                return (
+                    <Badge variant={hasTransport ? "default" : "outline"} className={hasTransport ? "bg-green-100 text-green-800" : ""}>
+                        {row.original.transportingInclude || 'No'}
+                    </Badge>
+                );
+            }
+        },
+        { 
+            accessorKey: 'transporterName', 
+            header: 'Transporter'
+        },
+        { 
+            accessorKey: 'amount', 
+            header: 'Amount',
+            cell: ({ row }) => (
+                <span className="font-semibold text-green-600">₹{row.original.amount?.toFixed(2)}</span>
+            )
+        },
     ];
 
     const schema = z.object({
@@ -144,25 +193,9 @@ useEffect(() => {
     });
 
     const form = useForm({
-    resolver: zodResolver(schema),
-    defaultValues: {
-        fmsName: 'Store Fms',  // ✅ Changed from '' to 'Store Fms'
-        status: undefined,
-        vehicleNumber: '',
-        from: '',
-        to: '',
-        materialLoadDetails: '',
-        biltyNumber: '',
-        rateType: undefined,
-        amount: '',
-        biltyImage: undefined,
-    },
-});
-
-   useEffect(() => {
-    if (!openDialog) {
-        form.reset({
-            fmsName: 'Store Fms',  // ✅ Changed from '' to 'Store Fms'
+        resolver: zodResolver(schema),
+        defaultValues: {
+            fmsName: 'Store Fms',
             status: undefined,
             vehicleNumber: '',
             from: '',
@@ -172,9 +205,25 @@ useEffect(() => {
             rateType: undefined,
             amount: '',
             biltyImage: undefined,
-        });
-    }
-}, [openDialog, form]);
+        },
+    });
+
+    useEffect(() => {
+        if (!openDialog) {
+            form.reset({
+                fmsName: 'Store Fms',
+                status: undefined,
+                vehicleNumber: '',
+                from: '',
+                to: '',
+                materialLoadDetails: '',
+                biltyNumber: '',
+                rateType: undefined,
+                amount: '',
+                biltyImage: undefined,
+            });
+        }
+    }, [openDialog, form]);
 
     async function onSubmit(values: z.infer<typeof schema>) {
         try {
@@ -182,12 +231,12 @@ useEffect(() => {
             const currentDateTime = new Date().toISOString();
 
             let biltyImageUrl = '';
-if (values.biltyImage) {
-    biltyImageUrl = await uploadFile({
-        file: values.biltyImage,  // ✅ Pass the file
-        folderId: import.meta.env.VITE_COMPARISON_SHEET_FOLDER
-    });
-}
+            if (values.biltyImage) {
+                biltyImageUrl = await uploadFile({
+                    file: values.biltyImage,
+                    folderId: import.meta.env.VITE_COMPARISON_SHEET_FOLDER
+                });
+            }
 
             await postToSheet(
                 fullkittingSheet
@@ -227,254 +276,423 @@ if (values.biltyImage) {
     }
 
     return (
-        <div>
-            <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-                <Heading heading="Full Kitting" subtext="Manage full kitting details">
-                    <Truck size={50} className="text-primary" />
-                </Heading>
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-6">
+            <div className="mx-auto max-w-7xl">
+                {/* Header Section */}
+                <div className="mb-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-3 bg-blue-600 rounded-lg shadow">
+                            <Truck size={28} className="text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Full Kitting</h1>
+                            <p className="text-gray-600">Manage and update full kitting details for materials</p>
+                        </div>
+                    </div>
 
-                <DataTable
-                    data={tableData}
-                    columns={columns}
-                    searchFields={['indentNumber', 'productName', 'vendorName','firmNameMatch']}
-                    dataLoading={fullkittingLoading}
-                />
-
-                {selectedItem && (
-                    <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                            <DialogTitle>Update Full Kitting</DialogTitle>
-                            <DialogDescription>
-                                Update details for Indent Number: {selectedItem.indentNumber}
-                            </DialogDescription>
-                        </DialogHeader>
-
-                        <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* FMS Name Dropdown */}
-                                    {/* FMS Name Dropdown */}
-{/* FMS Name Dropdown - Hardcoded with "Store Fms" as default */}
-<FormField
-    control={form.control}
-    name="fmsName"
-    render={({ field }) => (
-        <FormItem>
-            <FormLabel>FMS Name</FormLabel>
-            <Select 
-                onValueChange={field.onChange} 
-                value={field.value}
-                defaultValue="Store Fms"
-            >
-                <FormControl>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Store Fms" />
-                    </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                    {/* Hardcoded FMS options */}
-                    <SelectItem value="Store Fms">Store Fms</SelectItem>
-                </SelectContent>
-            </Select>
-            <FormMessage />
-        </FormItem>
-    )}
-/>
-
-                                    {/* Status Dropdown */}
-                                    <FormField
-                                        control={form.control}
-                                        name="status"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Status</FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value}>
-                                                    <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Select Status" />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="Yes">Yes</SelectItem>
-                                                        <SelectItem value="No">No</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    {/* Vehicle Number */}
-                                    <FormField
-                                        control={form.control}
-                                        name="vehicleNumber"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Vehicle Number</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="Enter vehicle number" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    {/* Bilty Number */}
-                                    <FormField
-                                        control={form.control}
-                                        name="biltyNumber"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Bilty Number</FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        type="text"
-                                                        placeholder="Enter bilty number"
-                                                        {...field}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    {/* From */}
-                                    <FormField
-                                        control={form.control}
-                                        name="from"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>From</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="Enter source location" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    {/* To */}
-                                    <FormField
-                                        control={form.control}
-                                        name="to"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>To</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="Enter destination location" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    {/* Rate Type Dropdown */}
-                                    <FormField
-                                        control={form.control}
-                                        name="rateType"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Rate Type</FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value}>
-                                                    <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Select Rate Type" />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="Fixed">Fixed</SelectItem>
-                                                        <SelectItem value="Per MT">Per MT</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    {/* Amount */}
-                                    <FormField
-                                        control={form.control}
-                                        name="amount"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Amount</FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        type="number"
-                                                        placeholder="Enter amount"
-                                                        {...field}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <Card className="bg-white shadow border-0 hover:shadow-md transition-shadow">
+                            <CardContent className="p-5">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-600">Total Items</p>
+                                        <p className="text-2xl font-bold text-gray-800 mt-1">{stats.total}</p>
+                                    </div>
+                                    <Package className="h-10 w-10 text-blue-500" />
                                 </div>
+                            </CardContent>
+                        </Card>
+                        
+                        <Card className="bg-white shadow border-0 hover:shadow-md transition-shadow">
+                            <CardContent className="p-5">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-600">Pending</p>
+                                        <p className="text-2xl font-bold text-amber-600 mt-1">{stats.pending}</p>
+                                    </div>
+                                    <div className="h-10 w-10 flex items-center justify-center bg-amber-100 rounded-full">
+                                        <span className="text-amber-600 font-bold">{stats.pending}</span>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        
+                        <Card className="bg-white shadow border-0 hover:shadow-md transition-shadow">
+                            <CardContent className="p-5">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-600">Completed</p>
+                                        <p className="text-2xl font-bold text-green-600 mt-1">{stats.completed}</p>
+                                    </div>
+                                    <div className="h-10 w-10 flex items-center justify-center bg-green-100 rounded-full">
+                                        <span className="text-green-600 font-bold">✓</span>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
 
-                                {/* Material Load Details - Full Width */}
-                                <FormField
-                                    control={form.control}
-                                    name="materialLoadDetails"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Material Load Details</FormLabel>
-                                            <FormControl>
-                                                <Textarea
-                                                    placeholder="Enter material load details"
-                                                    {...field}
-                                                    rows={3}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                {/* Main Content Card */}
+                <Card className="bg-white shadow-lg border-0 mb-6">
+                    <CardHeader className="pb-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="text-xl font-bold text-gray-800">Pending Full Kitting Items</CardTitle>
+                                <p className="text-gray-600 text-sm mt-1">Update full kitting details for pending items</p>
+                            </div>
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                                {stats.pending} Pending
+                            </Badge>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <DataTable
+                            data={tableData}
+                            columns={columns}
+                            searchFields={['indentNumber', 'productName', 'vendorName', 'firmNameMatch', 'billNo']}
+                            dataLoading={fullkittingLoading}
+                            className="border rounded-lg"
+                        />
+                    </CardContent>
+                </Card>
 
-                                {/* Bilty Image - Full Width */}
-                                <FormField
-                                    control={form.control}
-                                    name="biltyImage"
-                                    render={({ field: { value, onChange, ...fieldProps } }) => (
-                                        <FormItem>
-                                            <FormLabel>Bilty Image</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    {...fieldProps}
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={(event) => {
-                                                        const file = event.target.files?.[0];
-                                                        onChange(file);
-                                                    }}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                {/* Update Dialog */}
+                <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+                    {selectedItem && (
+                        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+                            <Form {...form}>
+                                <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-6">
+                                    <DialogHeader>
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="p-2 bg-blue-100 rounded-lg">
+                                                <Truck className="h-6 w-6 text-blue-600" />
+                                            </div>
+                                            <div>
+                                                <DialogTitle className="text-xl">Update Full Kitting</DialogTitle>
+                                                <DialogDescription>
+                                                    Update kitting details for Indent: <span className="font-semibold text-blue-600">{selectedItem.indentNumber}</span>
+                                                </DialogDescription>
+                                            </div>
+                                        </div>
+                                    </DialogHeader>
 
-                                <DialogFooter>
-                                    <DialogClose asChild>
-                                        <Button type="button" variant="outline" disabled={isSubmitting}>
-                                            Cancel
+                                    <Separator />
+
+                                    {/* Item Details Card */}
+                                    <Card className="bg-blue-50 border-blue-200">
+                                        <CardHeader className="pb-3">
+                                            <CardTitle className="text-base font-semibold text-blue-800 flex items-center gap-2">
+                                                <Package className="h-4 w-4" />
+                                                Item Details
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                <div className="space-y-1">
+                                                    <p className="text-xs font-medium text-gray-600">Indent Number</p>
+                                                    <p className="text-sm font-semibold text-gray-800">{selectedItem.indentNumber}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-xs font-medium text-gray-600">Product</p>
+                                                    <p className="text-sm font-semibold text-gray-800">{selectedItem.productName}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-xs font-medium text-gray-600">Quantity</p>
+                                                    <p className="text-sm font-semibold text-gray-800">{selectedItem.qty} units</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-xs font-medium text-gray-600">Vendor</p>
+                                                    <p className="text-sm font-semibold text-gray-800">{selectedItem.vendorName}</p>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Form Fields */}
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField
+                                                control={form.control}
+                                                name="fmsName"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="font-medium flex items-center gap-2">
+                                                            <Truck className="h-4 w-4" />
+                                                            FMS Name
+                                                        </FormLabel>
+                                                        <Select 
+                                                            onValueChange={field.onChange} 
+                                                            value={field.value}
+                                                            defaultValue="Store Fms"
+                                                        >
+                                                            <FormControl>
+                                                                <SelectTrigger className="border-gray-300 focus:border-blue-500">
+                                                                    <SelectValue placeholder="Store Fms" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                <SelectItem value="Store Fms">Store Fms</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <FormField
+                                                control={form.control}
+                                                name="status"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="font-medium">Status</FormLabel>
+                                                        <Select onValueChange={field.onChange} value={field.value}>
+                                                            <FormControl>
+                                                                <SelectTrigger className="border-gray-300 focus:border-blue-500">
+                                                                    <SelectValue placeholder="Select Status" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                <SelectItem value="Yes" className="flex items-center gap-2">
+                                                                    <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                                                                    Yes
+                                                                </SelectItem>
+                                                                <SelectItem value="No" className="flex items-center gap-2">
+                                                                    <div className="h-2 w-2 bg-red-500 rounded-full"></div>
+                                                                    No
+                                                                </SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField
+                                                control={form.control}
+                                                name="vehicleNumber"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="font-medium flex items-center gap-2">
+                                                            <Car className="h-4 w-4" />
+                                                            Vehicle Number
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Input 
+                                                                placeholder="Enter vehicle number" 
+                                                                className="border-gray-300 focus:border-blue-500"
+                                                                {...field} 
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <FormField
+                                                control={form.control}
+                                                name="biltyNumber"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="font-medium flex items-center gap-2">
+                                                            <Receipt className="h-4 w-4" />
+                                                            Bilty Number
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                type="text"
+                                                                placeholder="Enter bilty number"
+                                                                className="border-gray-300 focus:border-blue-500"
+                                                                {...field}
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField
+                                                control={form.control}
+                                                name="from"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="font-medium flex items-center gap-2">
+                                                            <MapPin className="h-4 w-4" />
+                                                            From Location
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Input 
+                                                                placeholder="Enter source location" 
+                                                                className="border-gray-300 focus:border-blue-500"
+                                                                {...field} 
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <FormField
+                                                control={form.control}
+                                                name="to"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="font-medium flex items-center gap-2">
+                                                            <MapPin className="h-4 w-4" />
+                                                            To Location
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Input 
+                                                                placeholder="Enter destination location" 
+                                                                className="border-gray-300 focus:border-blue-500"
+                                                                {...field} 
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField
+                                                control={form.control}
+                                                name="rateType"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="font-medium">Rate Type</FormLabel>
+                                                        <Select onValueChange={field.onChange} value={field.value}>
+                                                            <FormControl>
+                                                                <SelectTrigger className="border-gray-300 focus:border-blue-500">
+                                                                    <SelectValue placeholder="Select Rate Type" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                <SelectItem value="Fixed">Fixed Rate</SelectItem>
+                                                                <SelectItem value="Per MT">Per MT</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <FormField
+                                                control={form.control}
+                                                name="amount"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="font-medium flex items-center gap-2">
+                                                            <DollarSign className="h-4 w-4" />
+                                                            Amount
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                type="number"
+                                                                placeholder="Enter amount"
+                                                                className="border-gray-300 focus:border-blue-500"
+                                                                {...field}
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+
+                                        <FormField
+                                            control={form.control}
+                                            name="materialLoadDetails"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="font-medium">Material Load Details</FormLabel>
+                                                    <FormControl>
+                                                        <Textarea
+                                                            placeholder="Enter material load details, weight, quantity, special instructions, etc."
+                                                            className="min-h-[100px] border-gray-300 focus:border-blue-500"
+                                                            {...field}
+                                                            rows={4}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={form.control}
+                                            name="biltyImage"
+                                            render={({ field: { value, onChange, ...fieldProps } }) => (
+                                                <FormItem>
+                                                    <FormLabel className="font-medium flex items-center gap-2">
+                                                        <Upload className="h-4 w-4" />
+                                                        Bilty Image
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 transition-colors">
+                                                            <Input
+                                                                {...fieldProps}
+                                                                type="file"
+                                                                accept="image/*"
+                                                                className="cursor-pointer border-0"
+                                                                onChange={(event) => {
+                                                                    const file = event.target.files?.[0];
+                                                                    onChange(file);
+                                                                }}
+                                                            />
+                                                            <p className="text-xs text-gray-500 mt-2">
+                                                                Upload bilty/receipt image (JPG, PNG, PDF)
+                                                            </p>
+                                                        </div>
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+
+                                    <Separator />
+
+                                    <DialogFooter className="gap-2">
+                                        <DialogClose asChild>
+                                            <Button 
+                                                type="button" 
+                                                variant="outline" 
+                                                className="border-gray-300"
+                                                disabled={isSubmitting}
+                                            >
+                                                Cancel
+                                            </Button>
+                                        </DialogClose>
+                                        <Button 
+                                            type="submit" 
+                                            className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+                                            disabled={isSubmitting}
+                                        >
+                                            {isSubmitting ? (
+                                                <>
+                                                    <Loader size={18} className="mr-2" />
+                                                    Updating...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Truck className="mr-2 h-4 w-4" />
+                                                    Update Kitting
+                                                </>
+                                            )}
                                         </Button>
-                                    </DialogClose>
-                                    <Button type="submit" disabled={isSubmitting}>
-                                        {isSubmitting ? (
-                                            <>
-                                                <Loader size={20} className="mr-2" />
-                                                Submitting...
-                                            </>
-                                        ) : (
-                                            'Submit'
-                                        )}
-                                    </Button>
-                                </DialogFooter>
-                            </form>
-                        </Form>
-                    </DialogContent>
-                )}
-            </Dialog>
+                                    </DialogFooter>
+                                </form>
+                            </Form>
+                        </DialogContent>
+                    )}
+                </Dialog>
+            </div>
         </div>
     );
 }

@@ -793,18 +793,20 @@ export default () => {
 
     return (
         <div className="grid place-items-center w-full bg-gradient-to-br from-blue-100 via-purple-50 to-blue-50 rounder-md">
-            <div className="flex justify-between p-5 w-full">
-                <div className="flex gap-2 items-center">
-                    <FilePlus2 size={50} className="text-primary" />
-                    <div>
-                        <h1 className="text-2xl font-bold text-primary">Create or Revise PO</h1>
-                        <p className="text-muted-foreground text-sm">
-                            Create purchase order for indends or revise previous orders
-                        </p>
-                    </div>
-                </div>
-                <SidebarTrigger />
-            </div>
+           <div className="flex justify-center items-center p-5 w-full relative">
+    <div className="flex gap-2 items-center">
+        <FilePlus2 size={40} className="text-primary" />
+        <div className="text-center">
+            <h1 className="text-2xl font-bold text-primary">Create or Revise PO</h1>
+            <p className="text-muted-foreground text-sm">
+                Create purchase order for indents or revise previous orders
+            </p>
+        </div>
+    </div>
+    <div className="absolute right-5">
+        <SidebarTrigger />
+    </div>
+</div>
             <div className="sm:p-4 max-w-6xl">
                 <div className="w-full">
                     <Tabs defaultValue="create" onValueChange={(v) => setMode(v === 'create' ? v : 'revise')}>
