@@ -784,21 +784,21 @@ return (
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <FormField
-                                            control={form.control}
-                                            name="status"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="font-medium">Status</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            value="Received"
-                                                            readOnly
-                                                            className="bg-gray-50 font-medium"
-                                                        />
-                                                    </FormControl>
-                                                </FormItem>
-                                            )}
-                                        />
+    control={form.control}
+    name="status"
+    render={() => (  // ✅ Remove { field } parameter
+        <FormItem>
+            <FormLabel className="font-medium">Status</FormLabel>
+            <FormControl>
+                <Input
+                    value="Received"
+                    readOnly
+                    className="bg-gray-50 font-medium"
+                />
+            </FormControl>
+        </FormItem>
+    )}
+/>
 
                                         <FormField
                                             control={form.control}
