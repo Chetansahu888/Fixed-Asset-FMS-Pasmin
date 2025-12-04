@@ -246,13 +246,11 @@ export default () => {
     const poDate = form.watch('poDate');
     const poNumber = form.watch('poNumber');
 
-    // Around line 247-251
 const termsArray = useFieldArray({
     control: form.control,
     name: 'terms' as never,
 });
 
-// Around line 253-256
 const itemsArray = useFieldArray({
     control: form.control,
     name: 'indents' as never,
