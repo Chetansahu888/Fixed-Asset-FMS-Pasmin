@@ -247,14 +247,14 @@ export default () => {
     const poNumber = form.watch('poNumber');
 
     const termsArray = useFieldArray({
-        control: form.control,
-        name: 'terms' as any,
-    });
+    control: form.control,
+    name: 'terms' as never,
+});
 
-    const itemsArray = useFieldArray({
-        control: form.control,
-        name: 'indents' as any,
-    });
+const itemsArray = useFieldArray({
+    control: form.control,
+    name: 'indents',
+});
 
     // Vendor selection effect for CREATE mode
     useEffect(() => {
